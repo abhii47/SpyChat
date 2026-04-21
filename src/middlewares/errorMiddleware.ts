@@ -15,7 +15,6 @@ export const errorMiddleware = (
         method:req.method,
         path:req.originalUrl,
         statusCode,
-        errorMessage: err.message,
         stack:err.stack
     });
 

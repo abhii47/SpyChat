@@ -7,24 +7,33 @@ import errorHandler from "./middlewares/errorMiddleware";
 import { getEnv } from "./config/env";
 
 const app: Application = express();
-const PORT = getEnv("PORT");
 
+//Middlewares
 app.use(express.json());
 app.use(requestLogger);
+
+//Route Imports
+import authRoutes from "./routes/authRoute";
+
+//Route Middleware
+app.use("/api/auth", authRoutes);
 
 //Test Api
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send("hello world");
 });
 
+//Error Handler Middleware
 app.use(errorHandler);
 
+//Start Server
 const serverStart = async () => {
   try {
     await sequelize.authenticate();
     logger.info("Database Connected Successfully.");
     await sequelize.sync();
     logger.info("Table Synced Successfully");
+    const PORT = Number(getEnv("PORT"));
     app.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);
     });
