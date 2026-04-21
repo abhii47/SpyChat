@@ -5,8 +5,18 @@ import logger from "./utils/logger";
 import { requestLogger } from "./middlewares/logMiddleware";
 import errorHandler from "./middlewares/errorMiddleware";
 import { getEnv } from "./config/env";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 const app: Application = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer,{
+  cors:{
+    origin:"http://localhost:4000",
+    credentials:true,
+  }
+});
+
 
 //Middlewares
 app.use(express.json());
@@ -19,7 +29,7 @@ import authRoutes from "./routes/authRoute";
 app.use("/api/auth", authRoutes);
 
 //Test Api
-app.get("/", (req: Request, res: Response) => {
+app.get("/api", (req: Request, res: Response) => {
   res.status(200).send("hello world");
 });
 
@@ -31,12 +41,25 @@ const serverStart = async () => {
   try {
     await sequelize.authenticate();
     logger.info("Database Connected Successfully.");
+
     await sequelize.sync();
     logger.info("Table Synced Successfully");
+
     const PORT = Number(getEnv("PORT"));
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);
+      logger.info("socket is ready for connection");
     });
+
+    //Basic Socket connection testing
+    io.on("connection",(socket)=>{
+      logger.info("User Connected", socket.id);
+
+      socket.on("disconnect",()=>{
+        logger.info("User Disconnected",socket.id);
+      });
+    });
+    
   } catch (err: any) {
     logger.error("Error starting server", { stack: err.stack });
   }

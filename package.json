@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "NODE_ENV=development nodemon dist/server.js",
-    "prod": "NODE_ENV=production nodemon dist/server.js"
+    "dev": "cross-env NODE_ENV=development nodemon dist/server.js",
+    "prod": "cross-env NODE_ENV=production nodemon dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +39,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.6.0",
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.14",
     "sequelize-cli": "^6.6.5",
     "typescript": "^6.0.3"
