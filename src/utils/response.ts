@@ -1,7 +1,6 @@
 import { Response } from "express";
-import { success } from "zod";
 
-export const sucessResponse = (
+export const successResponse = (
     msg:string,
     statusCode:number,
     res:Response,
@@ -10,6 +9,6 @@ export const sucessResponse = (
     res.status(statusCode).json({
         success:true,
         message:msg,
-        data:data||null
+        data
     });
 }

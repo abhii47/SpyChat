@@ -1,14 +1,17 @@
 import AppError from "../utils/appError";
 import bcrypt from "bcryptjs";
 import { User } from "../models";
+import logger from "../utils/logger";
+import { generateAccessToken, generateRefreshToken } from "../utils/token";
+import { redis } from "../config/redis";
 
-type reqBody = {
+type regBody = {
     name:string,
     email:string,
     password:string,
     avatar:string,
 }
-export const register = async(body:reqBody) => {
+export const register = async(body:regBody) => {
     const { name,email,password,avatar } = body;
 
     if(!name || !email || !password || !avatar){
@@ -24,9 +27,63 @@ export const register = async(body:reqBody) => {
         avatar
     });
 
-    return user;
+    //exclude password from user data 
+    const userData = user.toJSON();
+    const { password: _, ...safeUser } = userData;
+
+    return safeUser;
+}
+
+type logBody = {
+    email:string,
+    password:string
+}
+type Payload = {
+    id:number,
+    email:string
+}
+export const login = async(body:logBody) => {
+    const { email, password } = body;
+
+    const user = await User.findOne({
+        where:{ email },
+    });
+
+    if(!user){
+        logger.debug("Login failed: user not found",{ email });
+        throw new AppError("Invalid email or password",401);
+    } 
+
+    const matchPassword = await bcrypt.compare(
+        password,user.password
+    );
+
+    if(!matchPassword){
+        logger.debug("Password failed: password not matched");
+        throw new AppError("Invalid email or password",401);
+    }
+
+    const payload:Payload = {
+        id:user.user_id,
+        email:user.email,
+    }
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    //store refresh token on redis
+    const key = `refresh:${user.user_id}`;
+    await redis.set(key,refreshToken,"EX",7 * 24 * 60 * 60);
+
+    //exclude password from user data
+    const userData = user.toJSON();
+    const { password: _, ...safeUser } = userData;
+
+    return { user:safeUser, accessToken, refreshToken }
+
 }
 
 export default {
-    register
+    register,
+    login
 }
