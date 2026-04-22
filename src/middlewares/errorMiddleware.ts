@@ -3,12 +3,16 @@ import AppError from "../utils/appError";
 import logger from "../utils/logger";
 
 export const errorMiddleware = (
-    err:Error | AppError, 
+    err:any, 
     req:Request,
     res:Response,
     next:NextFunction
 ) => {
-    let statusCode = err instanceof AppError ? err.statusCode : 500;
+    
+    let statusCode = 
+        err instanceof AppError 
+            ? err.statusCode 
+            : 500;
     let message = err.message || "Internal Server Error";
 
     logger.error("Unhandled Error", {

@@ -6,7 +6,9 @@ import { requestLogger } from "./middlewares/logMiddleware";
 import errorHandler from "./middlewares/errorMiddleware";
 import { getEnv } from "./config/env";
 import { createServer } from "http";
+import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
+import { initSocket } from "./sockets";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -20,6 +22,7 @@ const io = new Server(httpServer,{
 
 //Middlewares
 app.use(express.json());
+app.use(cookieParser());
 app.use(requestLogger);
 
 //Route Imports
@@ -52,13 +55,7 @@ const serverStart = async () => {
     });
 
     //Basic Socket connection testing
-    io.on("connection",(socket)=>{
-      logger.info("User Connected", socket.id);
-
-      socket.on("disconnect",()=>{
-        logger.info("User Disconnected",socket.id);
-      });
-    });
+    initSocket(io);
     
   } catch (err: any) {
     logger.error("Error starting server", { stack: err.stack });
