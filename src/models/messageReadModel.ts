@@ -1,7 +1,14 @@
-import { DataTypes } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from "sequelize";
 import sequelize from "../config/db";
 
-export const MessageRead = sequelize.define("message_read",{
+export class MessageRead extends Model<InferAttributes<MessageRead>, InferCreationAttributes<MessageRead>> {
+    declare message_read_id: CreationOptional<number>;
+    declare message_id: number;
+    declare user_id: number;
+    declare read_at: Date;
+}
+
+MessageRead.init({
     message_read_id:{
         type:DataTypes.INTEGER,
         autoIncrement:true,
@@ -20,6 +27,8 @@ export const MessageRead = sequelize.define("message_read",{
         allowNull:false,
     }
 },{
+    sequelize,
+    modelName:"message_read",
     timestamps:false,
     indexes:[
         {fields:["message_id"]},

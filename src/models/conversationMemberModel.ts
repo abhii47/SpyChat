@@ -1,7 +1,18 @@
-import { DataTypes } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from "sequelize";
 import sequelize from "../config/db";
 
-export const ConversationMember = sequelize.define("conversation_member",{
+export class ConversationMember extends Model<
+    InferAttributes<ConversationMember, { omit: "created_at" | "updated_at" }>,
+    InferCreationAttributes<ConversationMember, { omit: "created_at" | "updated_at" }>
+> {
+    declare conversation_member_id: CreationOptional<number>;
+    declare conversation_id: number;
+    declare user_id: number;
+    declare created_at: CreationOptional<Date>;
+    declare updated_at: CreationOptional<Date>;
+}
+
+ConversationMember.init({
     conversation_member_id:{
         type:DataTypes.INTEGER,
         autoIncrement:true,
@@ -16,6 +27,8 @@ export const ConversationMember = sequelize.define("conversation_member",{
         allowNull:false
     }
 },{
+    sequelize,
+    modelName:"conversation_member",
     timestamps:true,
     createdAt: "created_at",
     updatedAt: "updated_at",
