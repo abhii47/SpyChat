@@ -1,7 +1,16 @@
-import { DataTypes } from "sequelize";
+import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from "sequelize";
 import sequelize from "../config/db";
 
-export const GroupMember = sequelize.define("group_memeber",{
+export class GroupMember extends Model<InferAttributes<GroupMember>, InferCreationAttributes<GroupMember>> {
+    declare group_member_id: CreationOptional<number>;
+    declare group_id: number;
+    declare user_id: number;
+    declare role: CreationOptional<"admin" | "member">;
+    declare joined_at: CreationOptional<Date>;
+    declare left_at: Date | null;
+}
+
+GroupMember.init({
     group_member_id:{
         type:DataTypes.INTEGER,
         autoIncrement:true,
@@ -30,6 +39,8 @@ export const GroupMember = sequelize.define("group_memeber",{
         allowNull:true
     }
 },{
+    sequelize,
+    modelName:"group_member",
     timestamps:false,
     indexes:[
         {fields:["group_id"]},

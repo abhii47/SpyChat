@@ -20,7 +20,7 @@ Group.belongsTo(User,{
 
 //Conversation -> ConversationMember (One-to-Many)
 Conversation.hasMany(ConversationMember,{
-    foreignKey:"conversayion_id",
+    foreignKey:"conversation_id",
     as:"members"
 });
 ConversationMember.belongsTo(Conversation,{

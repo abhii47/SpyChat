@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { getEnv } from "./env";
+import logger from "../utils/logger";
 
 export const redis = new Redis(getEnv("REDIS_URL"), {
     maxRetriesPerRequest:5,
@@ -7,8 +8,10 @@ export const redis = new Redis(getEnv("REDIS_URL"), {
 });
 
 redis.on("connect",() => {
-    console.log("Redis Connected Successfully");
+    logger.info("Redis Connected Successfully");
 });
-redis.on("error",(err) => {
-    console.error("Redis Connection Error:", err);
+redis.on("error",(err:Error) => {
+    logger.error("Redis Connection Error:",{
+        stack:err.stack
+    });
 });
