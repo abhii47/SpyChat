@@ -4,19 +4,22 @@ import { User } from "../models";
 import logger from "../utils/logger";
 import { generateAccessToken, generateRefreshToken } from "../utils/token";
 import { redis } from "../config/redis";
+import { uploadFile } from "../utils/uploadToCloudinary";
+import { getEnv } from "../config/env";
 
 type regBody = {
     name:string,
     email:string,
     password:string,
-    avatar:string,
 }
-export const register = async(body:regBody) => {
-    const { name,email,password,avatar } = body;
+export const register = async(body:regBody,avatar:Express.Multer.File) => {
+    const { name,email,password } = body;
 
-    if(!name || !email || !password || !avatar){
+    if(!name || !email || !password ){
         throw new AppError("User Fields are  missing",400);
     }
+
+    const avatarUrl = await uploadFile(avatar,getEnv("USER_FOLDER"),'image');
 
     const hashPassword = await bcrypt.hash(password,10);
     
@@ -24,7 +27,7 @@ export const register = async(body:regBody) => {
         name,
         email,
         password:hashPassword,
-        avatar
+        avatar:avatarUrl.secure_url
     });
 
     //exclude password from user data 

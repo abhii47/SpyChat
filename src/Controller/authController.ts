@@ -8,7 +8,8 @@ export const register = async(
     next:NextFunction
 ) => {
     try {
-        const user = await authService.register(req.body);
+        const avatar = req.file as Express.Multer.File;
+        const user = await authService.register(req.body,avatar);
         successResponse("User Registered Successfully",201,res,user);
     } catch (err:any) {
         next(err);
