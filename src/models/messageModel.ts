@@ -1,6 +1,12 @@
 import { CreationOptional, DataTypes, InferAttributes, InferCreationAttributes, Model } from "sequelize";
 import sequelize from "../config/db";
 
+type MessageMedia = {
+    url: string;
+    public_id: string;
+    type: "image" | "file";
+};
+
 export class Message extends Model<
     InferAttributes<Message, { omit: "created_at" | "updated_at" }>,
     InferCreationAttributes<Message, { omit: "created_at" | "updated_at" }>
@@ -10,9 +16,8 @@ export class Message extends Model<
     declare conversation_id: number | null;
     declare group_id: number | null;
     declare content: string;
-    declare type: CreationOptional<"text" | "image" | "file">;
-    declare media_url: string | null;
-    declare media_public_id: string | null;
+    declare type: CreationOptional<"text" | "media">;
+    declare media: MessageMedia[] | null;
     declare created_at: CreationOptional<Date>;
     declare updated_at: CreationOptional<Date>;
 }
@@ -40,17 +45,13 @@ Message.init({
         allowNull:false
     },
     type:{
-        type:DataTypes.ENUM("text","image","file"),
+        type:DataTypes.ENUM("text","media"),
         defaultValue:"text",
     },
-    media_url:{
-        type:DataTypes.STRING,
+    media:{
+        type:DataTypes.JSON,
         allowNull:true
     },
-    media_public_id:{
-        type:DataTypes.STRING,
-        allowNull:true
-    }
 },{
     sequelize,
     modelName:"message",
