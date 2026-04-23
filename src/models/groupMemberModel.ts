@@ -40,7 +40,7 @@ GroupMember.init({
     }
 },{
     sequelize,
-    modelName:"group_memeber",
+    modelName:"group_member",
     timestamps:false,
     indexes:[
         {fields:["group_id"]},

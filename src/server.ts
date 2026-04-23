@@ -14,10 +14,11 @@ const app: Application = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer,{
   cors:{
-    origin:"http://localhost:4000",
+    origin: getEnv("APP_URL"),
     credentials:true,
   }
 });
+app.set("io",io);
 
 
 //Middlewares
