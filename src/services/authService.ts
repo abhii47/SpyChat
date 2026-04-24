@@ -15,10 +15,6 @@ type regBody = {
 export const register = async(body:regBody,avatar:Express.Multer.File) => {
     const { name,email,password } = body;
 
-    if(!name || !email || !password ){
-        throw new AppError("User Fields are  missing",400);
-    }
-
     const avatarUrl = await uploadFile(avatar,getEnv("USER_FOLDER"),'image');
 
     const hashPassword = await bcrypt.hash(password,10);
@@ -53,7 +49,7 @@ export const login = async(body:logBody) => {
     });
 
     if(!user){
-        logger.debug("Login failed: user not found",{ email });
+        logger.warn("Login failed: user not found",{ email });
         throw new AppError("Invalid email or password",401);
     } 
 
@@ -62,7 +58,7 @@ export const login = async(body:logBody) => {
     );
 
     if(!matchPassword){
-        logger.debug("Password failed: password not matched");
+        logger.warn("Password failed: password not matched");
         throw new AppError("Invalid email or password",401);
     }
 
@@ -81,6 +77,8 @@ export const login = async(body:logBody) => {
     //exclude password from user data
     const userData = user.toJSON();
     const { password: _, ...safeUser } = userData;
+
+    logger.info("User logged in", { userId: user.user_id });
 
     return { user:safeUser, accessToken, refreshToken }
 
