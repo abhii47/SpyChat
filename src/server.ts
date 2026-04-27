@@ -28,9 +28,11 @@ app.use(requestLogger);
 
 //Route Imports
 import authRoutes from "./routes/authRoute";
+import convRoutes from "./routes/convRoute";
 
 //Route Middleware
 app.use("/api/auth", authRoutes);
+app.use("/api/conversations",convRoutes);
 
 //Test Api
 app.get("/api", (req: Request, res: Response) => {
