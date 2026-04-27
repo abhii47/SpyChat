@@ -20,7 +20,10 @@ export const sendMessage = async(body:msgBody) => {
     //Validate Membership before saving
     if(conversation_id){
         const isMember = await ConversationMember.findOne({
-            where:{user_id:sender_id},
+            where:{
+                user_id:sender_id,
+                conversation_id
+            },
         });
         if(!isMember){
             logger.warn("Membership doesn't exist on this Conversation");
@@ -30,7 +33,11 @@ export const sendMessage = async(body:msgBody) => {
 
     if(group_id){
         const isMember = await GroupMember.findOne({
-            where:{user_id:sender_id},
+            where:{
+                user_id:sender_id,
+                group_id,
+                left_at:null
+            },
         });
         if(!isMember){
             logger.warn("Membership doesn't exist on this Group");

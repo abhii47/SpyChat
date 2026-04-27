@@ -11,7 +11,7 @@ export const statusHandler = (io:Server, socket:Socket) => {
     };
 
     const setoffline = async() => {
-        await redis.del(`Online.${userId}`);
+        await redis.del(`Online:${userId}`);
         await User.update({ last_seen:new Date() },{ where:{ user_id:userId } });
         socket.broadcast.emit("user_offline", { userId, last_seen:new Date() });
     };

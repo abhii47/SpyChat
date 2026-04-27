@@ -90,11 +90,54 @@ export const addMember = async(
     }
 
     if (existing) {
-    await existing.update({ left_at: null, joined_at: new Date() });
-    return existing;
-  }
+        await existing.update({ left_at: null, joined_at: new Date() });
+        return existing;
+    }
 
-  return GroupMember.create({ group_id, user_id, left_at: null });
+    return GroupMember.create({ group_id, user_id, left_at: null });
+}
+
+export const removeMember = async(
+    adminId:number,
+    group_id:number,
+    user_id:number
+) => {
+    //check loggedIn user is Admin or not
+    const isAdmin = await GroupMember.findOne({
+        where:{
+            user_id:adminId,
+            group_id,
+            role:role.ADMIN,
+            left_at:null
+        }
+    });
+
+    if(!isAdmin){
+        logger.warn("Access Denied");
+        throw new AppError("Only admin can remove the member", 403);
+    }
+
+    //check user is member of group or not
+    const member = await GroupMember.findOne({
+        where:{
+            user_id,
+            group_id,
+            role:role.MEMBER,
+            left_at:null
+        }
+    });
+
+    if(!member){
+        logger.warn("Member not found");
+        throw new AppError("Member not found", 404);
+    }
+
+    //if member then remove
+    await member.update({
+        left_at:new Date()
+    });
+
+    return member;
 }
 
 export const getGroupMembers = async(user_id:number) => {
@@ -106,5 +149,7 @@ export const getGroupMembers = async(user_id:number) => {
 
 export default {
     createGroup,
+    addMember,
+    removeMember,
     getGroupMembers
 }
