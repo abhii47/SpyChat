@@ -1,6 +1,7 @@
+import { Op, Sequelize } from "sequelize";
 import sequelize from "../config/db";
 import { getEnv } from "../config/env";
-import { Group, GroupMember } from "../models"
+import { Group, GroupMember, Message, MessageRead, User } from "../models"
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import { uploadFile } from "../utils/uploadToCloudinary";
@@ -13,7 +14,7 @@ enum role {
 export const createGroup = async(
     creatorId:number,
     name:string,
-    description:string,
+    description:string = "",
     avatar:Express.Multer.File,
     memberIds:number[],
 ) => {
@@ -140,6 +141,158 @@ export const removeMember = async(
     return member;
 }
 
+export const getMyGroups = async(user_id:number) => {
+    const groups = await GroupMember.findAll({
+        where:{ user_id, left_at:null },
+        include:[
+            {
+                model:Group,
+                as:"group",
+                attributes:["group_id","name","avatar"],
+                required:true,
+                include:[
+                    {
+                        model:User,
+                        as:"admin",
+                        attributes:["user_id","name"]
+                    },
+                    {
+                        model:Message,
+                        as:"messages",
+                        separate:true,
+                        limit:1,
+                        attributes:["content","created_at"],
+                        order:[["created_at",'DESC']]
+                    }
+                ]
+            }
+        ]
+    });
+
+    const result = await Promise.all(
+        groups.map(async(m:any) => {
+            const group = m.group;
+            const unreadMessages = await Message.findAll({
+                    where:{ 
+                        group_id:group.group_id,
+                        sender_id:{ [Op.ne]:user_id }
+                    },
+                    attributes:{exclude:["media"]},
+                    include:[
+                        {
+                            model:MessageRead,
+                            as:"reads",
+                            where:{ user_id },
+                            required:false
+                        }
+                    ]
+            });
+        
+            const unreadCount =  unreadMessages.filter(
+                (msg:any) => msg.reads.length === 0 
+            );
+
+            return {
+                group:group,
+                role:m.role,
+                joined_at:m.joined_at,
+                last_message:group.messages[0],
+                unread_count:unreadCount.length,   
+            };
+        })
+    );
+    return result;
+}
+
+export const getGroupDetails = async(user_id:number, group_id:number) => {
+    const isMember = await GroupMember.findOne({
+        where:{ 
+            user_id, 
+            left_at:null,
+            group_id
+        }
+    });
+
+    if(!isMember){
+        logger.warn("Access Denied");
+        throw new AppError("You are not a member of this group", 403);
+    }
+
+    const group = await Group.findOne({
+        where:{ group_id },
+        attributes:{ exclude: ["created_by","updated_at"] },
+        include:[
+            {
+                model:User,
+                as:"admin",
+                attributes:["user_id","name","avatar"],
+            },
+            {
+                model:GroupMember,
+                as:"members",
+                attributes:[
+                    "group_member_id",
+                    [Sequelize.literal("`members->user`.`name`"),"name"],
+                    [Sequelize.literal("`members->user`.`avatar`"),"avatar"],
+                    "joined_at"
+                ],
+                where:{ left_at:null, role:role.MEMBER },
+                include:[
+                    {
+                        model:User, 
+                        as:"user",
+                        attributes:[]
+                    }
+                ]
+            }
+        ]
+    });
+
+    if(!group){
+        logger.warn("Group Not Found");
+        throw new AppError("Group not found", 404);
+    }
+
+    return group;
+}
+
+export const getGroupMessages = async(
+    user_id:number,
+    group_id:number,
+    limit:number = 20,
+    offset:number = 0
+) => {
+    const isMember = await GroupMember.findOne({
+        where:{ group_id, user_id, left_at:null }
+    });
+
+    if(!isMember){
+        logger.warn("You are not memmber of this group");
+        throw new AppError("You are not memmber of this group", 403);
+    }
+
+    const messages = await Message.findAndCountAll({
+        where:{ group_id },
+        limit,
+        offset,
+        order:[["created_at","DESC"]],
+        include:[
+            {
+                model:User,
+                as:"sender",
+                attributes:["user_id","avatar","name"],
+            },
+        ]
+    });
+
+    return {
+        total:messages.count,
+        limit,
+        offset,
+        messages:messages.rows
+    };
+}
+
 export const getGroupMembers = async(user_id:number) => {
     const members = await GroupMember.findAll({
         where:{ user_id }
@@ -151,5 +304,8 @@ export default {
     createGroup,
     addMember,
     removeMember,
+    getMyGroups,
+    getGroupDetails,
+    getGroupMessages,
     getGroupMembers
 }
