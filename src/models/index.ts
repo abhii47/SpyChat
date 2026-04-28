@@ -28,6 +28,15 @@ ConversationMember.belongsTo(User,{
     as:"user"
 });
 
+User.hasMany(Group,{
+    foreignKey:"created_by",
+    as:"groups"
+});
+Group.belongsTo(User,{
+    foreignKey:"created_by",
+    as:"admin"
+});
+
 //Group -> GroupMember (One-to-Many)
 Group.hasMany(GroupMember,{
     foreignKey:"group_id",
@@ -40,11 +49,11 @@ GroupMember.belongsTo(Group,{
 
 //User -> GroupMember (One-to-Many)
 User.hasMany(GroupMember,{
-    foreignKey:"group_id",
+    foreignKey:"user_id",
     as:"group_memeberships",
 });
 GroupMember.belongsTo(User,{
-    foreignKey:"group_id",
+    foreignKey:"user_id",
     as:"user"
 });
 

@@ -6,7 +6,6 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from ".
 import { redis } from "../config/redis";
 import { uploadFile } from "../utils/uploadToCloudinary";
 import { getEnv } from "../config/env";
-import { email } from "zod";
 
 type regBody = {
     name: string,

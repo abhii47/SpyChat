@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import convService from "../services/convService";
 import { successResponse } from "../utils/response";
-import AppError from "../utils/appError";
 
 export const startConversation = async(
     req:Request,
@@ -10,7 +9,7 @@ export const startConversation = async(
 ) => {
     try {
         const user_id:number = req.user?.id;
-        const receiverId:number = req.body;
+        const { receiverId } = req.body;
 
         const {conversation, isNew} = await convService.startConversation(user_id, receiverId);
 

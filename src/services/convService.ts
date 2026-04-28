@@ -35,8 +35,6 @@ export const startConversation = async (user_id: number, receiverId: number) => 
         return { conversation: existingConversation, isNew: false }
     }
 
-
-
     // Create new conversation if not exist
     const t = await sequelize.transaction();
     try {
@@ -74,11 +72,12 @@ export const getMyConversations = async (user_id: number) => {
                         model: ConversationMember,
                         as: "members",
                         where: { user_id: { [Op.ne]: user_id } },
+                        attributes:["conversation_member_id","created_at"],
                         include: [
                             {
                                 model: User,
                                 as: "user",
-                                attributes: ["user_id", "name", "email", "avatar", "is_active", "last_seen"],
+                                attributes: ["user_id", "name", "avatar", "last_seen"],
                             }
                         ]
                     },
@@ -86,7 +85,6 @@ export const getMyConversations = async (user_id: number) => {
                         model: Message,
                         as: "messages",
                         limit: 1,
-                        attributes:{exclude:['group_id','media',]},
                         order: [['created_at', 'DESC']],
                         separate:true
                     }
@@ -98,13 +96,12 @@ export const getMyConversations = async (user_id: number) => {
         conversations.map(async(m:any) => {
             const conv = m.conversation;
 
-            const unreadCount = await Message.count({
+            const unreadMessages = await Message.findAll({
                 where:{ 
                     conversation_id:conv.conversation_id,
-                    [Op.and]:[
-                        sequelize.where(sequelize.col("reads.message_read_id"),null),
-                    ],
+                    sender_id:{ [Op.ne]:user_id },
                 },
+                attributes:{ exclude:['media'] },
                 include:[
                     {
                         model:MessageRead,
@@ -113,13 +110,17 @@ export const getMyConversations = async (user_id: number) => {
                         required:false
                     }
                 ],
-                distinct:true,
             });
+
+            const unreadCount = unreadMessages.filter(
+                (msg:any) => msg.reads.length === 0
+            );
+
             return {
                 conversation_id: conv.conversation_id,
                 members: conv.members,
                 lastMessage: conv.messages?.[0] || null,
-                unreadCount,
+                unreadCount:unreadCount.length,
             };
         })
     );
