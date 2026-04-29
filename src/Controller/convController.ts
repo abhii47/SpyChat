@@ -18,6 +18,7 @@ export const startConversation = async(
         if(isNew){
             const io = req.app.get("io");
             const room = `room_conv_${conversation.conversation_id}`;
+            
             await joinNewRoom(io,user_id,room);
             await joinNewRoom(io,receiverId,room);
         }
