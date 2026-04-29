@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import groupService from "../services/groupService";
 import { successResponse } from "../utils/response";
+import { joinNewRoom } from "../sockets";
+import { redis } from "../config/redis";
 
 export const createGroup = async(
     req:Request,
@@ -14,6 +16,15 @@ export const createGroup = async(
         const memberIds: number[] = JSON.parse(req.body.memberIds);
 
         const group = await groupService.createGroup(userId,name,description,avatar,memberIds);
+
+        //after create group join the room
+        const io = req.app.get("io");
+        const room = `room_group_${group.group_id}`;
+        const allMemberIds = [userId, ...memberIds];
+        await Promise.all(
+            allMemberIds.map(id => joinNewRoom(io,id,room))
+        );
+    
         successResponse("Group Created Successfully", 201, res, group);
     } catch (err:any) {
        next(err); 
@@ -63,6 +74,12 @@ export const addMember = async(
         const adminId:number = req.user?.id;
         const { group_id, user_id } = req.body;
         const member = await groupService.addMember(adminId,group_id,user_id);
+
+        //after add member join the room
+        const io = req.app.get("io");
+        const room = `room_group_${group_id}`;
+        await joinNewRoom(io,user_id,room);
+
         successResponse("Member Added Successfully", 200, res, member);
     } catch (err:any) {
         next(err);
@@ -78,6 +95,22 @@ export const removeMember = async(
         const adminId:number = req.user?.id;
         const { group_id, user_id } = req.body;
         const member = await groupService.removeMember(adminId,group_id,user_id);
+
+        const io = req.app.get("io");
+        const socketId = await redis.get(`Online:${user_id}`);
+
+        if(socketId){
+            const targetSocket = io.sockets.sockets.get(socketId);
+            if(targetSocket){
+                targetSocket.leave(`room_group_${group_id}`);
+
+                targetSocket.emit("removed_from_group",{
+                    group_id,
+                    user_id
+                });
+            }
+        }
+
         successResponse("Member Removed Successfully", 200, res, member);
     } catch (err:any) {
         next(err);
