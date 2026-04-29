@@ -5,6 +5,7 @@ import convService from "../services/convService";
 import groupService from "../services/groupService";
 import { statusHandler } from "./statusHandler";
 import { chatHandler } from "./chathandler";
+import { redis } from "../config/redis";
 
 export const autoJoinRoom = async(socket:Socket, userId:number) => {
 
@@ -31,6 +32,25 @@ export const autoJoinRoom = async(socket:Socket, userId:number) => {
     `);
 }
 
+export const joinNewRoom = async(io:Server, userId:number, room:string) => {
+    const socketId = await redis.get(`Online:${userId}`);
+
+    if(!socketId){
+        logger.info(`User ${userId} is offline, room skipped: ${room}`);
+        return;
+    }
+
+    const targetSocket = io.sockets.sockets.get(socketId);
+
+    if(!targetSocket){
+        logger.warn(`Socket not found for userId ${userId}, socketId: ${socketId}`);
+        return;
+    }
+
+    targetSocket.join(room);
+    logger.info(`User ${userId} dynamically joined ${room}`);
+};
+
 export const initSocket = (io:Server) => {
 
     // Auth middleware runs before any connection
@@ -41,6 +61,8 @@ export const initSocket = (io:Server) => {
         const userId:number = (socket as any).user.id;
         logger.info("User Connceted", { socketId:socket.id, userId });
 
+        // await redis.set(`Online:${userId}`, socket.id);
+
         //Auto join all rooms
         await autoJoinRoom(socket,userId);
 
@@ -48,8 +70,9 @@ export const initSocket = (io:Server) => {
         statusHandler(io, socket);
         chatHandler(io, socket);
         
-        socket.on("disconnect", () => {
+        socket.on("disconnect", async() => {
             logger.info("User Disconnected", { userId });
+            await redis.del(`Online:${userId}`);
         });
     });
 };

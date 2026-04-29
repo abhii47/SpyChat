@@ -8,16 +8,6 @@ import { MessageRead } from "./messageReadModel";
 
 //**************************** Associations **********************
 
-// User -> Group (One-to-Many)
-User.hasMany(Group,{
-    foreignKey:"created_by",
-    as:"groups"
-});
-Group.belongsTo(User,{
-    foreignKey:"created_by",
-    as:"admin"
-});
-
 //Conversation -> ConversationMember (One-to-Many)
 Conversation.hasMany(ConversationMember,{
     foreignKey:"conversation_id",
@@ -28,6 +18,25 @@ ConversationMember.belongsTo(Conversation,{
     as:"conversation"
 });
 
+//User -> ConversationMember (One-to-Many)
+User.hasMany(ConversationMember,{
+    foreignKey:"user_id",
+    as:"conversation_memberships"
+});
+ConversationMember.belongsTo(User,{
+    foreignKey:"user_id",
+    as:"user"
+});
+
+User.hasMany(Group,{
+    foreignKey:"created_by",
+    as:"groups"
+});
+Group.belongsTo(User,{
+    foreignKey:"created_by",
+    as:"admin"
+});
+
 //Group -> GroupMember (One-to-Many)
 Group.hasMany(GroupMember,{
     foreignKey:"group_id",
@@ -36,6 +45,16 @@ Group.hasMany(GroupMember,{
 GroupMember.belongsTo(Group,{
     foreignKey:"group_id",
     as:"group"
+});
+
+//User -> GroupMember (One-to-Many)
+User.hasMany(GroupMember,{
+    foreignKey:"user_id",
+    as:"group_memeberships",
+});
+GroupMember.belongsTo(User,{
+    foreignKey:"user_id",
+    as:"user"
 });
 
 //Conversation -> Message (One-to-Many)

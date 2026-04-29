@@ -12,13 +12,13 @@ import { initSocket } from "./sockets";
 
 const app: Application = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer,{
-  cors:{
+const io = new Server(httpServer, {
+  cors: {
     origin: getEnv("APP_URL"),
-    credentials:true,
+    credentials: true,
   }
 });
-app.set("io",io);
+app.set("io", io);
 
 
 //Middlewares
@@ -28,9 +28,13 @@ app.use(requestLogger);
 
 //Route Imports
 import authRoutes from "./routes/authRoute";
+import convRoutes from "./routes/convRoute";
+import groupRoutes from "./routes/groupRoute";
 
 //Route Middleware
 app.use("/api/auth", authRoutes);
+app.use("/api/conversations", convRoutes);
+app.use("/api/groups", groupRoutes);
 
 //Test Api
 app.get("/api", (req: Request, res: Response) => {
@@ -57,7 +61,7 @@ const serverStart = async () => {
 
     //Basic Socket connection testing
     initSocket(io);
-    
+
   } catch (err: any) {
     logger.error("Error starting server", { stack: err.stack });
   }

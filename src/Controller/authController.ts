@@ -40,7 +40,54 @@ export const login = async(
     }
 }
 
+export const refresh = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const refreshtoken = req.cookies?.refreshToken;
+    const accessToken = await authService.refresh(refreshtoken);
+
+    successResponse("Access Token Refreshed",200,res, accessToken);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
+export const logout = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const refreshToken = req.cookies?.refreshToken;
+        await authService.logout(refreshToken);
+        res.clearCookie("refreshToken");
+        successResponse("User Logout Successfully",200,res);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
+export const getMe = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const userId = req.user?.id;
+        const user = await authService.getMe(userId);
+        successResponse("Profile fetched successfully",200,res,user);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export default {
     register,
-    login
+    login,
+    refresh,
+    logout,
+    getMe
 }
