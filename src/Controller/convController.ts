@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import convService from "../services/convService";
 import { successResponse } from "../utils/response";
+import { joinNewRoom } from "../sockets";
 
 export const startConversation = async(
     req:Request,
@@ -12,6 +13,15 @@ export const startConversation = async(
         const { receiverId } = req.body;
 
         const {conversation, isNew} = await convService.startConversation(user_id, receiverId);
+
+        //after create new conversation join the room
+        if(isNew){
+            const io = req.app.get("io");
+            const room = `room_conv_${conversation.conversation_id}`;
+            
+            await joinNewRoom(io,user_id,room);
+            await joinNewRoom(io,receiverId,room);
+        }
 
         const statusCode = isNew ? 201 : 200;
         const message = isNew ? "Converstion Started" : "Conversation Already Existed";

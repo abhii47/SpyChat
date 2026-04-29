@@ -4,7 +4,7 @@ import { verifyAccessToken } from "../utils/token";
 
 export const socketAuthMiddleware = async (socket: any, next: any) => {
   try {
-    const token = socket.handshake.auth.token;
+    const token = socket.handshake.query.token;
     if (!token){
       logger.warn("Socket Auth failed : token not found");
       throw new AppError("Authentication error", 401);
