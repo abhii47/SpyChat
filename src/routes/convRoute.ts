@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { auth } from "../middlewares/authMiddleware";
-import convController from "../Controller/convController";
+import convController from "../Controllers/convController";
 import { validateBody } from "../middlewares/validateMiddleware";
 import { startConversationSchema } from "../validations/convValidation";
 
