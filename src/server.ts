@@ -30,11 +30,13 @@ app.use(requestLogger);
 import authRoutes from "./routes/authRoute";
 import convRoutes from "./routes/convRoute";
 import groupRoutes from "./routes/groupRoute";
+import userRoutes from "./routes/userRoute";
 
 //Route Middleware
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", convRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/users",userRoutes);
 
 //Test Api
 app.get("/api", (req: Request, res: Response) => {
