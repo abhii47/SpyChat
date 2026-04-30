@@ -3,6 +3,7 @@ import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import sequelize from "../config/db";
 import { Op } from "sequelize";
+import messageService, { getUnreadCount } from "./messageService";
 
 export const startConversation = async (user_id: number, receiverId: number) => {
 
@@ -96,31 +97,14 @@ export const getMyConversations = async (user_id: number) => {
         conversations.map(async(m:any) => {
             const conv = m.conversation;
 
-            const unreadMessages = await Message.findAll({
-                where:{ 
-                    conversation_id:conv.conversation_id,
-                    sender_id:{ [Op.ne]:user_id },
-                },
-                attributes:{ exclude:['media'] },
-                include:[
-                    {
-                        model:MessageRead,
-                        as:"reads",
-                        where:{ user_id },
-                        required:false
-                    }
-                ],
-            });
-
-            const unreadCount = unreadMessages.filter(
-                (msg:any) => msg.reads.length === 0
-            );
+            const unreadCount = await getUnreadCount(user_id, "conversation", conv.conversation_id);
 
             return {
                 conversation_id: conv.conversation_id,
                 members: conv.members,
                 lastMessage: conv.messages?.[0] || null,
-                unreadCount:unreadCount.length,
+                unread_count:unreadCount,
+                updated_at:conv.updated_at,
             };
         })
     );
@@ -132,7 +116,7 @@ export const getConversationMessages = async(
     user_id:number,
     conversation_id:number,
     limit:number = 20,
-    offset:number = 0
+    page:number = 1
 ) => {
     const isMember = await ConversationMember.findOne({
         where:{
@@ -146,29 +130,11 @@ export const getConversationMessages = async(
         throw new AppError("You are not a member of this conversation", 403);
     }
 
-    const messages = await Message.findAndCountAll  ({
-        where:{
-            conversation_id,
-        },
-        limit,
-        offset,
-        attributes:{exclude:['group_id','media']},
-        order:[['created_at','DESC']],
-        include:[
-            {
-                model:User,
-                as:"sender",
-                attributes:["user_id","name","avatar"]
-            },
-        ]
+    page = page <= 0 ? 1 : page;
 
-    });
-    return {
-        total:messages.count,
-        limit,
-        offset,
-        messages:messages.rows
-    };
+    const messages = await messageService.getMessage("conversation",conversation_id,limit,page);
+
+    return messages;
 }
 
 export const getConvMembers = async (user_id: number) => {
