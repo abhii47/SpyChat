@@ -25,12 +25,4 @@ export const createGroupSchema = z.object({
     }, "member_ids must be a valid JSON array of user IDs e.g. [2,3,4]"),
 });
 
-export const addMemberSchema = z.object({
-  user_id: z
-    .number("user_id must be a number")
-    .int()
-    .positive("user_id must be a positive integer"),
-});
-
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
-export type AddMemberInput = z.infer<typeof addMemberSchema>;

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { auth } from "../middlewares/authMiddleware";
 import { uploadSingle } from "../middlewares/uploadMiddleware";
 import { validateBody } from "../middlewares/validateMiddleware";
-import { addMemberSchema, createGroupSchema } from "../validations/groupValidation";
+import { createGroupSchema } from "../validations/groupValidation";
 import groupController from "../Controller/groupController";
 
 const router = Router();
@@ -16,12 +16,8 @@ router.post(
 );
 router.get("/", auth, groupController.getMyGroups);
 router.get("/:id", auth, groupController.getGroupDetails);
-router.post(
-  "/:id/members", auth,
-  validateBody(addMemberSchema),
-  groupController.addMember
-);
-router.delete("/:id/members/:userId", auth, groupController.removeMember);
+router.post("/:groupId/members/:userId", auth, groupController.addMember);
+router.delete("/:groupId/members/:userId", auth, groupController.removeMember);
 router.get("/:id/messages", auth, groupController.getGroupMessages);
 
 export default router;

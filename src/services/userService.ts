@@ -85,7 +85,7 @@ export const updateProfile = async(
     user.avatar = avatarUrl ?? user.avatar;
 
     const updated = await user.save();
-    const { password: _, ...safeUser } = updated.toJSON();
+    const { password: _,deleted_at: __, ...safeUser } = updated.toJSON() as any;
     return safeUser;
 }
 
