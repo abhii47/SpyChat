@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import userService from "../services/userService";
 import { successResponse } from "../utils/response";
+import { searchQuerySchema } from "../validations/userValidation";
+import AppError from "../utils/appError";
 
 export const searchUsers = async(
     req:Request,
@@ -8,12 +10,18 @@ export const searchUsers = async(
     next:NextFunction
 ) => {
     try {
-        const query:string = req.query.name as string;
         const requesterId:number = req.user?.id;
-        const limit:number = Number(req.query.limit) || 10;
-        const offset:number = Number(req.query.offset) || 0;
 
-        const data = await userService.searchUsers(query,requesterId,limit,offset);
+        //Validate Query
+        const result = searchQuerySchema.safeParse(req.query);
+        if(!result.success){
+            const message = result.error.issues.map((i)=>i.message).join(",");
+            throw new AppError(message, 422);
+        }
+
+        const { name, limit, offset } = result.data;
+
+        const data = await userService.searchUsers(name,requesterId,limit,offset);
         successResponse("Users fetched successfully", 200, res, data);
     } catch (err:any) {
         next(err);

@@ -100,11 +100,11 @@ export const getUserProfile = async (user_id: number) => {
   }
 
   // Redis se online status check karo
-  const isOnline = await redis.exists(`Online:${user_id}`);
+  const isOnline = await redis.get(`Online:${user_id}`);
 
   return {
     ...user.toJSON(),
-    is_online: isOnline === 1,
+    is_online: isOnline ? true : false
   };
 };
 
