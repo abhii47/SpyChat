@@ -52,7 +52,8 @@ export const joinNewRoom = async(io:Server, userId:number, room:string) => {
 };
 
 export const initSocket = (io:Server) => {
-
+    logger.info("Initializing Socket");
+    
     // Auth middleware runs before any connection
     io.use(socketAuthMiddleware);
 
