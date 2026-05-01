@@ -10,7 +10,7 @@ const sequelize = new Sequelize(
         port: Number(getEnv('DB_PORT')),
         dialect: 'mysql',
         logging: console.log
-    }
+    },
 );
 
 export default sequelize;
