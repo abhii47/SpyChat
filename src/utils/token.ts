@@ -6,7 +6,7 @@ export const generateAccessToken = (payload:Record<string, any>):string => {
     const token = jwt.sign(
         payload,
         secret,
-        {expiresIn:"15m"}
+        {expiresIn:"90m"}
     );
     return token;
 }
