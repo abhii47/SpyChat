@@ -5,6 +5,7 @@ import { Group, GroupMember, Message, MessageRead, User } from "../models"
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import { uploadFile } from "../utils/uploadToCloudinary";
+import messageService, { getUnreadCount } from "./messageService";
 
 enum role {
     ADMIN ='admin',
@@ -172,32 +173,15 @@ export const getMyGroups = async(user_id:number) => {
     const result = await Promise.all(
         groups.map(async(m:any) => {
             const group = m.group;
-            const unreadMessages = await Message.findAll({
-                    where:{ 
-                        group_id:group.group_id,
-                        sender_id:{ [Op.ne]:user_id }
-                    },
-                    attributes:{exclude:["media"]},
-                    include:[
-                        {
-                            model:MessageRead,
-                            as:"reads",
-                            where:{ user_id },
-                            required:false
-                        }
-                    ]
-            });
-        
-            const unreadCount =  unreadMessages.filter(
-                (msg:any) => msg.reads.length === 0 
-            );
+
+            const unreadCount = await getUnreadCount(user_id,"group",group.group_id);
 
             return {
                 group:group,
                 role:m.role,
                 joined_at:m.joined_at,
                 last_message:group.messages[0],
-                unread_count:unreadCount.length,   
+                unread_count:unreadCount,   
             };
         })
     );
@@ -260,7 +244,7 @@ export const getGroupMessages = async(
     user_id:number,
     group_id:number,
     limit:number = 20,
-    offset:number = 0
+    page:number = 1
 ) => {
     const isMember = await GroupMember.findOne({
         where:{ group_id, user_id, left_at:null }
@@ -271,26 +255,11 @@ export const getGroupMessages = async(
         throw new AppError("You are not memmber of this group", 403);
     }
 
-    const messages = await Message.findAndCountAll({
-        where:{ group_id },
-        limit,
-        offset,
-        order:[["created_at","DESC"]],
-        include:[
-            {
-                model:User,
-                as:"sender",
-                attributes:["user_id","avatar","name"],
-            },
-        ]
-    });
+    page = page <= 0 ? 1 : page;
+    
+    const messages = await messageService.getMessage("group",group_id,limit,page);
 
-    return {
-        total:messages.count,
-        limit,
-        offset,
-        messages:messages.rows
-    };
+    return messages;
 }
 
 export const getGroupMembers = async(user_id:number) => {

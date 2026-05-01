@@ -1,6 +1,8 @@
-import { ConversationMember, GroupMember, Message, MessageRead } from "../models";
+import { getEnv } from "../config/env";
+import { ConversationMember, GroupMember, Message, MessageRead, User } from "../models";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
+import { uploadMultipleFiles } from "../utils/uploadToCloudinary";
 
 type msgBody = {
     sender_id:number;
@@ -62,8 +64,10 @@ export const getMessage = async(
     type:"conversation" | "group",
     id: number,
     limit: number = 20,
-    offset:number = 0
+    page:number = 1,
 ) => {
+
+    const offset:number = (page - 1) * limit;
 
     //Where Condition For (Group | Individual)
     const whereCondition = type === 'conversation' 
@@ -71,14 +75,33 @@ export const getMessage = async(
                     : {group_id:id}
 
     //Get Messages
-    const messages = await Message.findAll({
+    const messages = await Message.findAndCountAll({
         limit,
         offset,
         where:whereCondition,
         order:[['created_at','DESC']],
+        include:[
+            {
+                model:User,
+                as:"sender",
+                attributes:["user_id","name","avatar"]
+            }
+        ]
     });
 
-    return messages;
+    const totalPages = Math.ceil(messages.count/limit);
+
+    return {
+        pagination:{
+            total_page:totalPages,
+            current_page:page,
+            next_page:page < totalPages ? page+1 : null,
+            prev_page:page > 1 ? page-1 : null,
+            limit,
+            total_message:messages.count
+        },
+        messages:messages.rows
+    }
 };
 
 export const checkMessageRead = async(
@@ -110,9 +133,92 @@ export const createMessageRead = async(
 
 }
 
+type mediaBody = {
+    roomId:number,
+    roomType:"conversation" | "group"
+}
+export const uploadMediaFiles = async(
+    user_id:number,
+    files:Express.Multer.File[],
+    body:mediaBody
+) => {
+    const { roomId, roomType } = body;
+
+    if(!files || files.length === 0){
+        throw new AppError("No files provided", 400);
+    }
+
+    if(roomType === "conversation"){
+        const isMember = await ConversationMember.findOne({
+            where:{
+                user_id,
+                conversation_id:roomId
+            }
+        });
+
+        if(!isMember){
+            logger.warn("Not a member of this conversation");
+            throw new AppError("Not a member of this conversation", 403);
+        }
+    }
+
+    if(roomType === "group"){
+        const isMember = await GroupMember.findOne({
+            where:{
+                user_id,
+                group_id:roomId
+            }
+        });
+
+        if(!isMember){
+            logger.warn("Not a member of this group");
+            throw new AppError("Not a member of this group", 403);
+        }
+    }
+
+    const uploaded = await uploadMultipleFiles(files,getEnv("MESSAGE_FOLDER"));
+    const mediaData = uploaded.map((file) => {
+        return {
+            url:file.secure_url,
+            public_id:file.public_id,
+            type:file.resource_type
+        }
+    });
+
+    logger.info("Media Uploaded",{ user_id, roomId, roomType, count:files.length });
+    return mediaData;
+}
+
+export const getUnreadCount = async(
+    userId:number,
+    roomType:"conversation"|"group",
+    roomId:number
+) => {
+    const whereCondition = roomType === "conversation"
+            ? { conversation_id:roomId }
+            : { group_id:roomId };
+    const allmessages = await Message.findAll({
+        where:whereCondition,
+        attributes:["message_id"],
+    });
+
+    if(allmessages.length === 0) return 0;
+    const allmessageIds = allmessages.map((msg) => msg.message_id);
+
+    const readCount = await MessageRead.count({
+        where:{
+            message_id:allmessageIds,
+            user_id:userId,
+        }
+    });
+
+    return allmessageIds.length - readCount;
+}
+
 export default {
     sendMessage,
     getMessage,
     checkMessageRead,
-    createMessageRead
+    createMessageRead,
+    uploadMediaFiles
 }

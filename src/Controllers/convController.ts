@@ -56,13 +56,13 @@ export const getConversationMessages = async(
         const user_id:number = req.user?.id;
         const conversation_id = Number(req.params.id);
         const limit = Number(req.query.limit);
-        const offset = Number(req.query.offset);
+        const page = Number(req.query.page);
 
         if(isNaN(conversation_id)){
             throw new Error("Invalid conversation ID");
         }
 
-        const data = await convService.getConversationMessages(user_id,conversation_id,limit,offset);
+        const data = await convService.getConversationMessages(user_id,conversation_id,limit,page);
         successResponse("Messages fetched successfully",200,res,data);
     } catch (err:any) {
         next(err);

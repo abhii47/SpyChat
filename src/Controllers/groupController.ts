@@ -72,7 +72,13 @@ export const addMember = async(
 ) => {
     try {
         const adminId:number = req.user?.id;
-        const { group_id, user_id } = req.body;
+        const group_id = Number(req.params.groupId);
+        const user_id = Number(req.params.userId);
+
+        if(isNaN(group_id) || isNaN(user_id)){
+            throw new Error("Invalid group ID or user ID");
+        }
+
         const member = await groupService.addMember(adminId,group_id,user_id);
 
         //after add member join the room
@@ -93,7 +99,13 @@ export const removeMember = async(
 ) => {
     try {
         const adminId:number = req.user?.id;
-        const { group_id, user_id } = req.body;
+        const group_id = Number(req.params.groupId);
+        const user_id = Number(req.params.userId);
+
+        if(isNaN(group_id) || isNaN(user_id)){
+            throw new Error("Invalid group ID or user ID");
+        }
+
         const member = await groupService.removeMember(adminId,group_id,user_id);
 
         const io = req.app.get("io");
@@ -121,14 +133,14 @@ export const getGroupMessages = async (req: Request, res: Response, next: NextFu
   try {
     const userId = req.user?.id;
     const groupId = Number(req.params.id);
-    const limit = Number(req.query.limit) || 20;
-    const offset = Number(req.query.offset) || 0;
+    const limit = Number(req.query.limit);
+    const page = Number(req.query.page);
 
     if (isNaN(groupId)) {
       throw new Error("Invalid group ID");
     }
 
-    const data = await groupService.getGroupMessages(userId, groupId, limit, offset);
+    const data = await groupService.getGroupMessages(userId, groupId, limit, page);
     successResponse("Group Messages Fetched Successfully", 200, res, data);
   } catch (err: any) {
     next(err);
