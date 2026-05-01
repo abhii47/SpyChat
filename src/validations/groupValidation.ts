@@ -22,7 +22,7 @@ export const createGroupSchema = z.object({
       } catch {
         return false;
       }
-    }, "member_ids must be a valid JSON array of user IDs e.g. [2,3,4]"),
+    }, "memberIds must be a valid JSON array of user IDs e.g. [2,3,4]"),/*  */
 });
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;

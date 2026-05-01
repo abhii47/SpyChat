@@ -2,11 +2,13 @@ import express, { Application, Request, Response } from "express";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
+import swaggerUi from "swagger-ui-express";
 
 //Config Imports
 import { getEnv } from "./config/env";
 import sequelize from "./config/db";
 import './models';
+import { swaggerSpec } from "./config/swagger";
 
 //Security Imports
 import helmet from "helmet";
@@ -17,6 +19,13 @@ import { authLimiter, globalLimiter, uploadLimiter } from "./config/rateLimit";
 import logger from "./utils/logger";
 import { requestLogger } from "./middlewares/logMiddleware";
 import errorHandler from "./middlewares/errorMiddleware";
+
+//Route Imports
+import authRoutes from "./routes/authRoute";
+import convRoutes from "./routes/convRoute";
+import groupRoutes from "./routes/groupRoute";
+import userRoutes from "./routes/userRoute";
+import messageRoutes from "./routes/messageRoute";
 
 //Socket Imports
 import { initSocket } from "./sockets";
@@ -50,12 +59,17 @@ const io = new Server(httpServer, {
 app.set("io", io);
 initSocket(io);
 
-//Route Imports
-import authRoutes from "./routes/authRoute";
-import convRoutes from "./routes/convRoute";
-import groupRoutes from "./routes/groupRoute";
-import userRoutes from "./routes/userRoute";
-import messageRoutes from "./routes/messageRoute";
+//Swagger Docs
+app.use("/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customSiteTitle: "SpyChat API Docs",
+    swaggerOptions: {
+      persistAuthorization: true,
+    }
+  })
+);
 
 //Route Middleware
 app.use("/api/auth",authLimiter, authRoutes);
