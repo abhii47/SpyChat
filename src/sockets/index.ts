@@ -52,7 +52,8 @@ export const joinNewRoom = async(io:Server, userId:number, room:string) => {
 };
 
 export const initSocket = (io:Server) => {
-
+    logger.info("Initializing Socket");
+    
     // Auth middleware runs before any connection
     io.use(socketAuthMiddleware);
 
@@ -60,8 +61,6 @@ export const initSocket = (io:Server) => {
 
         const userId:number = (socket as any).user.id;
         logger.info("User Connceted", { socketId:socket.id, userId });
-
-        // await redis.set(`Online:${userId}`, socket.id);
 
         //Auto join all rooms
         await autoJoinRoom(socket,userId);

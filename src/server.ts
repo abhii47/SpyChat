@@ -1,30 +1,24 @@
 import express, { Application, Request, Response } from "express";
-import sequelize from "./config/db";
-import './models';
-import logger from "./utils/logger";
-import { requestLogger } from "./middlewares/logMiddleware";
-import errorHandler from "./middlewares/errorMiddleware";
-import { getEnv } from "./config/env";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
-import { initSocket } from "./sockets";
+import swaggerUi from "swagger-ui-express";
 
-const app: Application = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: getEnv("APP_URL"),
-    credentials: true,
-  }
-});
-app.set("io", io);
+//Config Imports
+import { getEnv } from "./config/env";
+import sequelize from "./config/db";
+import './models';
+import { swaggerSpec } from "./config/swagger";
 
+//Security Imports
+import helmet from "helmet";
+import cors from "cors";
+import { authLimiter, globalLimiter, uploadLimiter } from "./config/rateLimit";
 
-//Middlewares
-app.use(express.json());
-app.use(cookieParser());
-app.use(requestLogger);
+//Middlewares Imports
+import logger from "./utils/logger";
+import { requestLogger } from "./middlewares/logMiddleware";
+import errorHandler from "./middlewares/errorMiddleware";
 
 //Route Imports
 import authRoutes from "./routes/authRoute";
@@ -33,16 +27,60 @@ import groupRoutes from "./routes/groupRoute";
 import userRoutes from "./routes/userRoute";
 import messageRoutes from "./routes/messageRoute";
 
+//Socket Imports
+import { initSocket } from "./sockets";
+
+const app: Application = express();
+const httpServer = createServer(app);
+
+//Security Middlewares
+app.use(helmet());
+app.use(
+  cors({
+    origin:getEnv("CLIENT_URL"),
+    credentials:true
+  })
+);
+app.use(globalLimiter);
+
+//General Middlewares
+app.use(express.json());
+app.use(cookieParser());
+app.use(requestLogger);
+
+//Socket.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: getEnv("CLIENT_URL"),
+    credentials: true,
+  }
+});
+
+app.set("io", io);
+initSocket(io);
+
+//Swagger Docs
+app.use("/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customSiteTitle: "SpyChat API Docs",
+    swaggerOptions: {
+      persistAuthorization: true,
+    }
+  })
+);
+
 //Route Middleware
-app.use("/api/auth", authRoutes);
+app.use("/api/auth",authLimiter, authRoutes);
 app.use("/api/conversations", convRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/users",userRoutes);
-app.use("/api/messages",messageRoutes);
+app.use("/api/messages",uploadLimiter,messageRoutes);
 
 //Test Api
-app.get("/api", (req: Request, res: Response) => {
-  res.status(200).send("hello world");
+app.get("/", (req: Request, res: Response) => {
+  res.send("SpyChat APP Is Working");
 });
 
 //Error Handler Middleware
@@ -63,11 +101,9 @@ const serverStart = async () => {
       logger.info("socket is ready for connection");
     });
 
-    //Basic Socket connection testing
-    initSocket(io);
-
   } catch (err: any) {
     logger.error("Error starting server", { stack: err.stack });
+    process.exit(1);
   }
 }
 serverStart();
