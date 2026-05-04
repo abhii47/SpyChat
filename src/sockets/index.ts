@@ -52,7 +52,7 @@ export const joinNewRoom = async(io:Server, userId:number, room:string) => {
 };
 
 export const initSocket = (io:Server) => {
-    logger.info("Initializing Socket");
+    logger.info("Initializing Socket....");
     
     // Auth middleware runs before any connection
     io.use(socketAuthMiddleware);
@@ -71,7 +71,6 @@ export const initSocket = (io:Server) => {
         
         socket.on("disconnect", async() => {
             logger.info("User Disconnected", { userId });
-            await redis.del(`Online:${userId}`);
         });
     });
 };
