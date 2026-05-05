@@ -6,6 +6,8 @@ import groupService from "../services/groupService";
 import { statusHandler } from "./statusHandler";
 import { chatHandler } from "./chathandler";
 import { redis } from "../config/redis";
+import { emitSocketError } from "../utils/socketError";
+import { convHandler } from "./convhandler";
 
 export const autoJoinRoom = async(socket:Socket, userId:number) => {
 
@@ -63,11 +65,17 @@ export const initSocket = (io:Server) => {
         logger.info("User Connceted", { socketId:socket.id, userId });
 
         //Auto join all rooms
-        await autoJoinRoom(socket,userId);
+        try {
+            await autoJoinRoom(socket,userId);
+        } catch (err:any) {
+            logger.error("autoJoinRoom error", { stack:err.stack });
+            emitSocketError(socket, "connection", err.message);
+        }
 
         //Register handlers
         statusHandler(io, socket);
         chatHandler(io, socket);
+        convHandler(io, socket);
         
         socket.on("disconnect", async() => {
             logger.info("User Disconnected", { userId });

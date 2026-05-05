@@ -1,4 +1,3 @@
-import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import { verifyAccessToken } from "../utils/token";
 
