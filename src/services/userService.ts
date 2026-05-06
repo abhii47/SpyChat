@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { User } from "../models"
+import { Group, GroupMember, User } from "../models"
 import { redis } from "../config/redis";
 import logger from "../utils/logger";
 import AppError from "../utils/appError";
@@ -40,6 +40,51 @@ export const searchUsers = async(
         offset,
         users:userStatus
     };
+};
+
+export const searchGroups = async(
+    query:string,
+    requesterId:number,
+    limit:number,
+    page:number,
+) => {
+    const groups = await Group.findAndCountAll({
+        limit,
+        offset:(page - 1) * limit,
+        attributes:["group_id","name","avatar","created_by"],
+        where:{
+            name:{[Op.like]:`%${query}%`}
+        },
+        include:[
+            {
+                model:GroupMember,
+                as:"members",
+                where:{
+                    user_id:requesterId,
+                    left_at:null,
+                },
+                attributes:["role"],
+                required:true
+            }
+        ]
+    });
+
+    const result = groups.rows.map((g:any) => {
+        return {
+            group_id:g.group_id,
+            name:g.name,
+            avatar:g.avatar,
+            created_by:g.created_by,
+            role:g.members[0].role
+        }     
+    });
+
+    return {
+        totalResult:groups.count,
+        limit,
+        page,
+        groups:result
+    }
 };
 
 type UpdateProfileBody = {
@@ -87,7 +132,7 @@ export const updateProfile = async(
     const updated = await user.save();
     const { password: _,deleted_at: __, ...safeUser } = updated.toJSON() as any;
     return safeUser;
-}
+};
 
 export const getUserProfile = async (user_id: number) => {
   const user = await User.findOne({
@@ -111,6 +156,7 @@ export const getUserProfile = async (user_id: number) => {
 
 export default {
     searchUsers,
+    searchGroups,
     updateProfile,
     getUserProfile
 }
