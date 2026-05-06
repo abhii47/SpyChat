@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io"
 import messageService from "../services/messageService";
 import logger from "../utils/logger";
+import { emitSocketError } from "../utils/socketError";
 
 type SendMessagePayload = {
     conversation_id?:number;
@@ -34,23 +35,17 @@ export const chatHandler = (io:Server, socket:Socket) => {
 
             //Validation
             if(!conversation_id && !group_id){
-                socket.emit("error",{
-                    message:"Conversation_id or Group_id is required"
-                });
+                emitSocketError(socket,"send_message", "Conversation_id or Group_id is required");
                 return;
             }
 
             if(type === "media" && (!media || media.length === 0)){
-                socket.emit("error",{
-                    message:"media array is required for type 'media'."
-                });
+                emitSocketError(socket, "send_message", "media array is required for type 'media'.");
                 return;
             }
 
             if(type === "text" && (!content || content.trim() === "")){
-                socket.emit("error",{
-                    message:"content cann't be empty for text messages"
-                });
+                emitSocketError(socket, "send_message", "content cann't be empty for text messages");
                 return;
             }
 
@@ -77,7 +72,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             logger.info("Message sent",{ room, sender:userId, type });
         } catch (err:any) {
             logger.error("send_message error", { stack: err.stack });
-            socket.emit('error',{message:err.message});
+            emitSocketError(socket, "send_message", err.message);
         }
     });
 
@@ -86,9 +81,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
         try {
             const { id, isGroup, isTyping } = payload;
             if(!id){
-                socket.emit("error",{
-                    message:"id is required for typing event"
-                });
+                emitSocketError(socket, "typing", "id is required for typing event");
                 return;
             }
             const room = isGroup ? `room_group_${id}` : `room_conv_${id}`;
@@ -99,7 +92,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             });
         } catch (err:any) {
             logger.error("typing error", { stack: err.stack });
-            socket.emit('error',{message:err.message});
+            emitSocketError(socket, "typing", err.message);
         }
     });
 
@@ -109,9 +102,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             const { message_id } = payload;
 
             if(!message_id){
-                socket.emit("error", {
-                    message:"message_id is required"
-                });
+                emitSocketError(socket, "mark_read", "message_id is required");
                 return;
             }
 
@@ -135,7 +126,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             });
         } catch (err:any) {
             logger.error("mark_read error", { stack: err.stack });
-            socket.emit("error", { message: err.message });
+            emitSocketError(socket, "mark_read", err.message);
         }
     });
 }

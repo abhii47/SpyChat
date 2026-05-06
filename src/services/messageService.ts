@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { getEnv } from "../config/env";
 import { ConversationMember, GroupMember, Message, MessageRead, User } from "../models";
 import AppError from "../utils/appError";
@@ -108,6 +109,7 @@ export const checkMessageRead = async(
     message_id:number,
     user_id:number
 ) => {
+    checkMessageRead
     const isRead = await MessageRead.findOne({
         where:{
             message_id,
@@ -122,6 +124,60 @@ export const createMessageRead = async(
     message_id:number,
     user_id:number
 ) => {
+    const message = await Message.findOne({
+        where:{ 
+            message_id,
+            sender_id:{[Op.ne]:user_id}
+        },
+        attributes:["sender_id","conversation_id","group_id"]
+    });
+
+    if(!message){
+        logger.warn("Message not found");
+        throw new AppError("Message not found", 404);
+    };
+
+    if(message.conversation_id){
+        const isMember = await ConversationMember.findOne({
+            where:{
+                user_id,
+                conversation_id:message.conversation_id
+            }
+        });
+
+        if(!isMember){
+            logger.warn("Not a member of this conversation");
+            throw new AppError("Not a member of this conversation", 403);
+        }
+    }
+
+    if(message.group_id){
+        const isMember = await GroupMember.findOne({
+            where:{
+                user_id,
+                group_id:message.group_id,
+                left_at:null
+            }
+        });
+
+        if(!isMember){
+            logger.warn("Not a member of this group");
+            throw new AppError("Not a member of this group", 403);
+        }
+    }
+
+    const isRead = await await MessageRead.findOne({
+        where:{
+            message_id,
+            user_id
+        }
+    });
+    
+    if(isRead){
+        logger.warn("Message already read");
+        throw new AppError("Message already read", 400);
+    }
+
 
     const readMessage = await MessageRead.create({
         message_id,
@@ -136,6 +192,11 @@ export const createMessageRead = async(
 type mediaBody = {
     roomId:number,
     roomType:"conversation" | "group"
+}
+type returnBody = {
+    url:string,
+    public_id:string,
+    type:"image" | "file"
 }
 export const uploadMediaFiles = async(
     user_id:number,
@@ -177,11 +238,12 @@ export const uploadMediaFiles = async(
     }
 
     const uploaded = await uploadMultipleFiles(files,getEnv("MESSAGE_FOLDER"));
-    const mediaData = uploaded.map((file) => {
+
+    const mediaData:returnBody[] = uploaded.map((file) => {
         return {
             url:file.secure_url,
             public_id:file.public_id,
-            type:file.resource_type
+            type:file.resource_type === 'image' ? "image" : "file"
         }
     });
 
@@ -220,5 +282,6 @@ export default {
     getMessage,
     checkMessageRead,
     createMessageRead,
-    uploadMediaFiles
+    uploadMediaFiles,
+    getUnreadCount
 }

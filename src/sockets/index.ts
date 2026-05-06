@@ -6,6 +6,10 @@ import groupService from "../services/groupService";
 import { statusHandler } from "./statusHandler";
 import { chatHandler } from "./chathandler";
 import { redis } from "../config/redis";
+import { emitSocketError } from "../utils/socketError";
+import { convHandler } from "./convhandler";
+import { groupHandler } from "./groupHandler";
+import { searchhandler } from "./searchHandler";
 
 export const autoJoinRoom = async(socket:Socket, userId:number) => {
 
@@ -52,7 +56,7 @@ export const joinNewRoom = async(io:Server, userId:number, room:string) => {
 };
 
 export const initSocket = (io:Server) => {
-    logger.info("Initializing Socket");
+    logger.info("Initializing Socket....");
     
     // Auth middleware runs before any connection
     io.use(socketAuthMiddleware);
@@ -63,15 +67,19 @@ export const initSocket = (io:Server) => {
         logger.info("User Connceted", { socketId:socket.id, userId });
 
         //Auto join all rooms
-        await autoJoinRoom(socket,userId);
+        try {
+            await autoJoinRoom(socket,userId);
+        } catch (err:any) {
+            logger.error("autoJoinRoom error", { stack:err.stack });
+            emitSocketError(socket, "connection", err.message);
+        }
 
         //Register handlers
         statusHandler(io, socket);
         chatHandler(io, socket);
+        convHandler(io, socket);
+        groupHandler(io, socket);
+        searchhandler(socket);
         
-        socket.on("disconnect", async() => {
-            logger.info("User Disconnected", { userId });
-            await redis.del(`Online:${userId}`);
-        });
     });
 };
