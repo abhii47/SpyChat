@@ -142,6 +142,31 @@ export const removeMember = async(
     return member;
 }
 
+export const leaveGroup = async(user_id:number, group_id:number) => {
+    const member = await GroupMember.findOne({
+        where:{
+            user_id,
+            group_id,
+            left_at:null,
+        }
+    });
+
+    if(!member){
+        logger.warn("Member not found");
+        throw new AppError("Member not found", 404);
+    }
+    if(member.role === role.ADMIN){
+        logger.warn("Admin cannot leave group");
+        throw new AppError("Admin cannot leave group", 403);
+    }
+
+    await member.update({
+        left_at:new Date()
+    });
+
+    return member;
+}
+
 export const getMyGroups = async(user_id:number) => {
     const groups = await GroupMember.findAll({
         where:{ user_id, left_at:null },
@@ -273,6 +298,7 @@ export default {
     createGroup,
     addMember,
     removeMember,
+    leaveGroup,
     getMyGroups,
     getGroupDetails,
     getGroupMessages,

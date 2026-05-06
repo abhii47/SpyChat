@@ -17,7 +17,7 @@ export const statusHandler = (io:Server, socket:Socket) => {
         logger.info("User Offline", { userId });
         await User.update({ last_seen:new Date() },{ where:{ user_id:userId } });
         socket.broadcast.emit("user_offline", { userId, last_seen:new Date() });
-    };
+    }
 
     // Connection hote hi setOnline call karo
     setOnline().catch((err:any) => {
@@ -26,7 +26,7 @@ export const statusHandler = (io:Server, socket:Socket) => {
 
     // Disconnect hone pe setOffline call karo
     socket.on("disconnect", () => {
-        setoffline().catch((err:any) => {
+        setoffline().catch((err:any) => {  
             logger.error("setOffline error", { stack:err.stack });
         });
     });

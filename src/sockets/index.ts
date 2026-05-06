@@ -8,6 +8,8 @@ import { chatHandler } from "./chathandler";
 import { redis } from "../config/redis";
 import { emitSocketError } from "../utils/socketError";
 import { convHandler } from "./convhandler";
+import { groupHandler } from "./groupHandler";
+import { searchhandler } from "./searchHandler";
 
 export const autoJoinRoom = async(socket:Socket, userId:number) => {
 
@@ -76,9 +78,8 @@ export const initSocket = (io:Server) => {
         statusHandler(io, socket);
         chatHandler(io, socket);
         convHandler(io, socket);
+        groupHandler(io, socket);
+        searchhandler(socket);
         
-        socket.on("disconnect", async() => {
-            logger.info("User Disconnected", { userId });
-        });
     });
 };
