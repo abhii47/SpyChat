@@ -31,6 +31,20 @@ export const createGroup = async(
     }
 }
 
+export const uploadGroupAvatar = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const avatar = req.file as Express.Multer.File;
+        const avatarUrl = await groupService.uploadGroupAvatar(avatar);
+        successResponse("Group Avatar Uploaded Successfully", 200, res, avatarUrl);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export const getMyGroups = async(
     req:Request,
     res:Response,
@@ -149,6 +163,7 @@ export const getGroupMessages = async (req: Request, res: Response, next: NextFu
 
 export default {
     createGroup,
+    uploadGroupAvatar,
     getMyGroups,
     getGroupDetails,
     addMember,
