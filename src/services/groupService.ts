@@ -21,6 +21,20 @@ export const createGroup = async(
 ) => {
     const t = await sequelize.transaction();
     try {
+        const allUser = await User.findAll({
+            where:{ 
+                user_id:{ [Op.in]: memberIds },
+            },
+            attributes:["user_id"],
+            transaction:t
+        });
+        const existingIds = allUser.map(u => u.user_id);
+        const missing = memberIds.filter(id => !existingIds.includes(id));
+
+        if(missing.length > 0){
+            throw new AppError(`Invalid member_ids:${missing}`,400);
+        }
+
         const avatarUrl = await uploadFile(avatar,getEnv("GROUP_FOLDER"),'image');
 
         const group = await Group.create({
@@ -32,7 +46,76 @@ export const createGroup = async(
         { transaction:t});
 
         const members = [
-            // { group_id, user_id, role}
+            { 
+                group_id:group.group_id, 
+                user_id:group.created_by,
+                role:role.ADMIN  
+            },
+            ...memberIds.map(m => ({
+                    group_id:group.group_id,
+                    user_id:m,
+                    role:role.MEMBER
+                })
+            )
+        ]
+
+        await GroupMember.bulkCreate(
+            members,
+            { transaction:t }
+        );
+
+        await t.commit();
+        return group;
+    } catch (err:any) {
+        await t.rollback();
+        logger.error("Group Creation : failed", { stack:err.stack });
+        throw err;
+    }
+}
+
+export const uploadGroupAvatar = async(
+    avatar:Express.Multer.File,
+) => {
+    const avatarUrl = await uploadFile(avatar,getEnv("GROUP_FOLDER"),'image');
+    return avatarUrl.secure_url;
+}
+
+export const createGroupSocket = async(
+    creatorId:number,
+    name:string,
+    avatar:string,
+    memberIds:number[],
+    description?:string
+) => {
+    const t = await sequelize.transaction();
+    try {
+        //check member ids
+        const allUser = await User.findAll({
+            where:{ 
+                user_id:{ [Op.in]: memberIds },
+            },
+            attributes:["user_id"],
+            transaction:t
+        });
+
+        const existingIds = allUser.map(u => u.user_id);
+        const missing = memberIds.filter(id => !existingIds.includes(id));
+
+        if(missing.length > 0){
+            throw new AppError(`Invalid member_ids:${missing}`,400);
+        }
+
+        //create group
+        const group = await Group.create({
+            name,
+            description,
+            avatar,
+            created_by:creatorId
+        },
+        { transaction:t});
+
+        //create group members
+        const members = [
             { 
                 group_id:group.group_id, 
                 user_id:group.created_by,
@@ -296,6 +379,8 @@ export const getGroupMembers = async(user_id:number) => {
 
 export default {
     createGroup,
+    uploadGroupAvatar,
+    createGroupSocket,
     addMember,
     removeMember,
     leaveGroup,

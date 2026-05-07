@@ -3,7 +3,7 @@ import { getEnv } from "../config/env";
 import { ConversationMember, GroupMember, Message, MessageRead, User } from "../models";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
-import { uploadMultipleFiles } from "../utils/uploadToCloudinary";
+import { deleteFiles, uploadMultipleFiles } from "../utils/uploadToCloudinary";
 
 type msgBody = {
     sender_id:number;
@@ -104,6 +104,36 @@ export const getMessage = async(
         messages:messages.rows
     }
 };
+
+export const deleteMessage = async(
+    message_id:number,
+    user_id:number
+) => {
+    const message = await Message.findOne({
+        where:{
+            message_id,
+            sender_id:user_id
+        }
+    });
+
+    if(!message){
+        logger.warn("message not found");
+        throw new AppError("message not found", 404);
+    }
+
+    let mediaUrls;
+    if(message.media){
+        const public_ids = message.media.map((m:any) => m.public_id);
+        mediaUrls = await deleteFiles(public_ids);
+    }
+    
+    await message.destroy();
+
+    return {
+        ...message.toJSON(),
+        deleted:mediaUrls ? mediaUrls.deleted : null,
+    }
+} 
 
 export const checkMessageRead = async(
     message_id:number,
@@ -280,6 +310,7 @@ export const getUnreadCount = async(
 export default {
     sendMessage,
     getMessage,
+    deleteMessage,
     checkMessageRead,
     createMessageRead,
     uploadMediaFiles,

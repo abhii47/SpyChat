@@ -93,7 +93,7 @@ export const getMyConversations = async (user_id: number) => {
             }
         ]
     });
-    const result = Promise.all(
+    const result = await Promise.all(
         conversations.map(async(m:any) => {
             const conv = m.conversation;
 

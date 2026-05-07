@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import authService from "../services/authService";
 import { successResponse } from "../utils/response";
+import { getEnv } from "../config/env";
 
 export const register = async(
     req:Request,
@@ -29,11 +30,11 @@ export const login = async(
         res.cookie("refreshToken",refreshToken,{
             httpOnly:true,
             sameSite:'strict',
-            secure:true,
+            secure:getEnv("NODE_ENV") === 'production',
             maxAge:expiryDate
         });
 
-        successResponse("User Login Successfully",200,res,{ user, accessToken });
+        successResponse("User Login Successfully",200,res,{ user, accessToken, expires_in:"90 minutes" });
 
     } catch (err:any) {
         next(err);

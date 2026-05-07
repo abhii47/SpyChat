@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io"
 import messageService from "../services/messageService";
 import logger from "../utils/logger";
 import { emitSocketError } from "../utils/socketError";
+import { JwtPayload } from "jsonwebtoken";
 
 type SendMessagePayload = {
     conversation_id?:number;
@@ -21,12 +22,12 @@ type TypingPayload = {
     isTyping:boolean;
 };
 
-type MarkReadPayload = {
+type MessageId = {
     message_id:number;
 };
 
 export const chatHandler = (io:Server, socket:Socket) => {
-    const userId:number = (socket as any).user.id;
+    const user:JwtPayload = (socket as any).user;
 
     //Send Message To Group Or Individual
     socket.on("send_message",async(payload:SendMessagePayload) => {
@@ -50,7 +51,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             }
 
             const message = await messageService.sendMessage({
-                sender_id:userId,
+                sender_id:user.id,
                 conversation_id,
                 group_id,
                 content,
@@ -64,12 +65,12 @@ export const chatHandler = (io:Server, socket:Socket) => {
 
 
             io.to(room).emit("new_message", {
-                ...message.toJSON(),
-                sender:{
-                    userId,
-                }
+                message,
+                sender_id:user.id,
+                sender_name:user.name,
+                sender_image:user.avatar
             });
-            logger.info("Message sent",{ room, sender:userId, type });
+            logger.info("Message sent",{ room, sender:user.id, type });
         } catch (err:any) {
             logger.error("send_message error", { stack: err.stack });
             emitSocketError(socket, "send_message", err.message);
@@ -87,7 +88,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
             const room = isGroup ? `room_group_${id}` : `room_conv_${id}`;
 
             socket.to(room).emit("typing",{
-                userId,
+                userId:user.id,
                 isTyping
             });
         } catch (err:any) {
@@ -97,7 +98,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
     });
 
     //Mark As A Read The Message
-    socket.on("mark_read", async(payload:MarkReadPayload) => {
+    socket.on("mark_read", async(payload:MessageId) => {
         try {
             const { message_id } = payload;
 
@@ -108,25 +109,54 @@ export const chatHandler = (io:Server, socket:Socket) => {
 
             const alreadyRead:boolean = await messageService.checkMessageRead(
                 message_id,
-                userId
+                user.id
             )
 
             if(!alreadyRead){
                 await messageService.createMessageRead(
                     message_id,
-                    userId
+                    user.id
                 );
-                logger.info("message marked as read", { message_id,userId });
+                logger.info("message marked as read", { message_id, read_by:user.id });
             }
 
             socket.emit("message_read",{
                 message_id,
-                read_by:userId,
+                read_by:user.id,
                 already_read:alreadyRead
             });
         } catch (err:any) {
             logger.error("mark_read error", { stack: err.stack });
             emitSocketError(socket, "mark_read", err.message);
+        }
+    });
+
+    //Delete Message
+    socket.on("delete_message", async(payload:MessageId) => {
+        try {
+            const { message_id } = payload;
+            
+            //Validation
+            if(!message_id){
+                emitSocketError(socket, "delete_message", "message_id is required");
+                return;
+            }
+            if(isNaN(Number(message_id))){
+                emitSocketError(socket, "delete_message", "Invalid message_id");
+                return;
+            }
+
+            const deleted = await messageService.deleteMessage(message_id,user.id);
+            const room = deleted.group_id !== null
+                ? `room_group_${ deleted.group_id }`
+                : `room_conv_${ deleted.conversation_id }`;
+
+            io.to(room).emit("notify", { message_id, room, deletedby:user.id });
+            logger.info("Message deleted", { message_id, room, deletedby:user.id });
+
+        } catch (err:any) {
+            logger.error("delete_message error", { stack: err.stack });
+            emitSocketError(socket, "delete_message", err.message);
         }
     });
 }

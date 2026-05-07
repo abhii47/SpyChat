@@ -59,3 +59,7 @@ export const uploadMultipleFiles = (
 
 //     return { success, failed }
 // };
+
+export const deleteFiles = async(public_ids:string[]) => {
+    return await cloudinary.api.delete_resources(public_ids);
+}

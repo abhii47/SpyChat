@@ -39,7 +39,9 @@ type logBody = {
 }
 type Payload = {
     id: number,
-    email: string
+    email: string,
+    name:string,
+    avatar:string
 }
 export const login = async (body: logBody) => {
     const { email, password } = body;
@@ -65,6 +67,8 @@ export const login = async (body: logBody) => {
     const payload: Payload = {
         id: user.user_id,
         email: user.email,
+        name:user.name,
+        avatar:user.avatar!
     }
 
     const accessToken = generateAccessToken(payload);

@@ -58,6 +58,24 @@ export const getMessage = async(
     }
 }
 
+export const deleteMessage = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const user_id = req.user?.id;
+        const message_id = Number(req.params.messageId);
+        if(isNaN(message_id)){
+            throw new Error("Invalid message ID");
+        }
+        const data = await messageService.deleteMessage(message_id,user_id);
+        successResponse("Message Deleted Successfully", 200, res, data);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export const checkMessageRead = async(
     req:Request,
     res:Response,
@@ -135,6 +153,7 @@ export const getUnreadCount = async(
 export default {
     sendMessage,
     getMessage,
+    deleteMessage,
     checkMessageRead,
     createMessageRead,
     uploadMediaFiles,

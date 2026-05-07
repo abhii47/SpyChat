@@ -14,6 +14,7 @@ router.post(
   validateBody(createGroupSchema),
   groupController.createGroup
 );
+router.post("/upload-avatar",auth,uploadSingle("avatar"),groupController.uploadGroupAvatar);
 router.get("/", auth, groupController.getMyGroups);
 router.get("/:id", auth, groupController.getGroupDetails);
 router.post("/:groupId/members/:userId", auth, groupController.addMember);
