@@ -20,9 +20,62 @@ type GroupMessagePayload = {
     page?:number
 }
 
+type GroupPayload = {
+    name:string,
+    description?:string,
+    avatarUrl:string,
+    memberIds:number[]
+}
+
 export const groupHandler = (io:Server, socket:Socket) => {
 
     const userId = (socket as any).user.id;
+
+    socket.on("create_group", async(payload:GroupPayload) => {
+        try {
+            const { name, description, avatarUrl, memberIds } = payload;
+            
+            //Validation
+            if(!name || name.trim().length === 0){
+                emitSocketError(socket, "create_group", "name is required");
+                return;
+            }
+            if(!avatarUrl || avatarUrl.trim().length === 0){
+                emitSocketError(socket, "create_group", "avatarUrl is required");
+                return;
+            }
+            if(!memberIds || !Array.isArray(memberIds) || memberIds.length === 0){
+                emitSocketError(socket, "create_group", "memberIds is required");
+                return;
+            }
+
+            const group = await groupService.createGroupSocket(userId,name,avatarUrl,memberIds,description);
+
+            const room = `room_group_${group.group_id}`;
+
+            //join new room
+            const allUserIds = [userId, ...memberIds];
+            await Promise.all(
+                allUserIds.map(id => joinNewRoom(io,id,room))
+            )
+
+            socket.emit("create_group_success", { group, member_count:allUserIds.length });
+            io.to(room).emit("notify", `${memberIds.join(",")} are added by ${userId}`);
+            memberIds.map((m) => 
+                socket.to(`user_${m}`).emit("notify", `You are added to ${group.name}`)
+            );
+            logger.info("User created group", { 
+                group_id:group.group_id, 
+                created_by:userId,
+                member_count:allUserIds.length 
+            });
+            
+        } catch (err:any) {
+            logger.error("create_group_error", { stack:err.stack });
+            emitSocketError(socket, "create_group", err.message);
+        }
+    });
+    
     socket.on("get_groups", async() => {
         try {
             const groups = await groupService.getMyGroups(userId);

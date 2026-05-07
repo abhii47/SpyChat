@@ -58,17 +58,7 @@ export const sendMessage = async(body:msgBody) => {
         media
     });
 
-    const sender = await User.findByPk(message.sender_id);
-    const senderData = {
-        user_id:sender?.user_id,
-        name:sender?.name,
-        avatar:sender?.avatar
-    };
-
-    return {
-        message,
-        sender:senderData
-    }
+    return message;
 }
 
 export const getMessage = async(
