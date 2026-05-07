@@ -21,7 +21,7 @@ type TypingPayload = {
     isTyping:boolean;
 };
 
-type MarkReadPayload = {
+type MessageId = {
     message_id:number;
 };
 
@@ -49,7 +49,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
                 return;
             }
 
-            const message = await messageService.sendMessage({
+            const data = await messageService.sendMessage({
                 sender_id:userId,
                 conversation_id,
                 group_id,
@@ -64,10 +64,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
 
 
             io.to(room).emit("new_message", {
-                ...message.toJSON(),
-                sender:{
-                    userId,
-                }
+                data,
             });
             logger.info("Message sent",{ room, sender:userId, type });
         } catch (err:any) {
@@ -97,7 +94,7 @@ export const chatHandler = (io:Server, socket:Socket) => {
     });
 
     //Mark As A Read The Message
-    socket.on("mark_read", async(payload:MarkReadPayload) => {
+    socket.on("mark_read", async(payload:MessageId) => {
         try {
             const { message_id } = payload;
 
@@ -127,6 +124,35 @@ export const chatHandler = (io:Server, socket:Socket) => {
         } catch (err:any) {
             logger.error("mark_read error", { stack: err.stack });
             emitSocketError(socket, "mark_read", err.message);
+        }
+    });
+
+    //Delete Message
+    socket.on("delete_message", async(payload:MessageId) => {
+        try {
+            const { message_id } = payload;
+            
+            //Validation
+            if(!message_id){
+                emitSocketError(socket, "delete_message", "message_id is required");
+                return;
+            }
+            if(isNaN(Number(message_id))){
+                emitSocketError(socket, "delete_message", "Invalid message_id");
+                return;
+            }
+
+            const deleted = await messageService.deleteMessage(message_id,userId);
+            const room = deleted.group_id !== null
+                ? `room_group_${ deleted.group_id }`
+                : `room_conv_${ deleted.conversation_id }`;
+
+            io.to(room).emit("notify", { message_id, room, deletedby:userId });
+            logger.info("Message deleted", { message_id, room, deletedby:userId });
+
+        } catch (err:any) {
+            logger.error("delete_message error", { stack: err.stack });
+            emitSocketError(socket, "delete_message", err.message);
         }
     });
 }
