@@ -106,7 +106,9 @@ export const refresh = async (refreshToken: string) => {
 
     const newAccessToken = generateAccessToken({
         id: decoded.id,
-        email: decoded.email
+        email: decoded.email,
+        name: decoded.name,
+        avatar: decoded.avatar
     });
 
     logger.info("Access token refreshed", { userId: decoded.id });
