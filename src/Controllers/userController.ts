@@ -19,9 +19,9 @@ export const searchUsers = async(
             throw new AppError(message, 422);
         }
 
-        const { name, limit, offset } = result.data;
+        const { query, limit, offset } = result.data;
 
-        const data = await userService.searchUsers(name,requesterId,limit,offset);
+        const data = await userService.searchUsers(query,requesterId,limit,offset);
         successResponse("Users fetched successfully", 200, res, data);
     } catch (err:any) {
         next(err);

@@ -59,10 +59,10 @@ export const groupHandler = (io:Server, socket:Socket) => {
                 allUserIds.map(id => joinNewRoom(io,id,room))
             )
 
-            socket.emit("create_group_success", { group, member_count:allUserIds.length });
-            io.to(room).emit("notify", `${memberIds.join(",")} are added by ${userId}`);
+            socket.emit("create_group_success", { type:"group created", group, member_count:allUserIds.length });
+            io.to(room).emit("notify", { type:"added members",members:memberIds, actor_id:userId });
             memberIds.map((m) => 
-                socket.to(`user_${m}`).emit("notify", `You are added to ${group.name}`)
+                socket.to(`user_${m}`).emit("notify", { type:"added to group", user:m, group:group.name })
             );
             logger.info("User created group", { 
                 group_id:group.group_id, 
@@ -129,7 +129,7 @@ export const groupHandler = (io:Server, socket:Socket) => {
             const room = `room_group_${group_id}`;
             await joinNewRoom(io, user_id, room);
 
-            io.to(room).emit("notify", { message:`user:${ user_id } added by admin:${ userId } in group:${ group_id }`});
+            io.to(room).emit("notify", { user:user_id, added_by:userId, group:group_id});
             socket.emit("add_member_success", { member });
             logger.info("User added member", { adminId:userId, group_id, user_id });
 
@@ -161,10 +161,10 @@ export const groupHandler = (io:Server, socket:Socket) => {
                 const socket = io.sockets.sockets.get(socketId)
                 if(socket){
                     socket.leave(room);
-                    socket.emit("notify", { message:`${ userId } removed you from ${ group_id }`});
+                    socket.emit("notify", { user:userId, removed_from:group_id });
                 }
             }
-            io.to(room).emit("notify", { message:`user:${ user_id } removed by admin:${ userId } from group:${ group_id }`});
+            io.to(room).emit("notify", { user:user_id, removed_by:userId, group:group_id });
             socket.emit("remove_member_success", { member });
             logger.info("User removed member", { adminId:userId, group_id, user_id });
         } catch (err:any) {
@@ -191,7 +191,7 @@ export const groupHandler = (io:Server, socket:Socket) => {
 
             const room = `room_group_${group_id}`;
             socket.leave(room);
-            io.to(room).emit("notify", { message:`user:${ userId } left group:${ group_id }`});
+            io.to(room).emit("notify", { user:userId, left_from:group_id});
             socket.emit("leave_group_success", { member });
             logger.info("User left group", { userId, group_id });
         } catch (err:any) {
