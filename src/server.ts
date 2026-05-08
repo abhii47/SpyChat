@@ -37,7 +37,14 @@ const httpServer = createServer(app);
 app.use(helmet());
 app.use(
   cors({
-    origin:getEnv("CLIENT_URL"),
+    origin:(origin, callback) => {
+      const allowOrigins =[ getEnv("CLIENT_URL"), getEnv("VITE_URL") ];
+      if(!origin || allowOrigins.includes(origin)){
+        callback(null, true);
+      }else{
+        callback(new Error(`CORS blocked: ${origin} not allowed`));
+      }
+    },
     credentials:true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -53,7 +60,7 @@ app.use(requestLogger);
 //Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: getEnv("CLIENT_URL"),
+    origin: [getEnv("CLIENT_URL"), getEnv("VITE_URL")],
     credentials: true,
   }
 });

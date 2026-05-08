@@ -18,7 +18,7 @@ export const createGroup = async(
     description:string = "",
     avatar:Express.Multer.File,
     memberIds:number[],
-) => {
+):Promise<Group> => {
     const t = await sequelize.transaction();
     try {
         const allUser = await User.findAll({
@@ -75,7 +75,7 @@ export const createGroup = async(
 
 export const uploadGroupAvatar = async(
     avatar:Express.Multer.File,
-) => {
+):Promise<string> => {
     const avatarUrl = await uploadFile(avatar,getEnv("GROUP_FOLDER"),'image');
     return avatarUrl.secure_url;
 }
@@ -86,7 +86,7 @@ export const createGroupSocket = async(
     avatar:string,
     memberIds:number[],
     description?:string
-) => {
+):Promise<Group> => {
     const t = await sequelize.transaction();
     try {
         //check member ids
@@ -147,7 +147,7 @@ export const addMember = async(
     adminId:number,
     group_id:number,
     user_id:number,
-) => {
+):Promise<GroupMember> => {
     const isAdmin = await GroupMember.findOne({
         where:{ 
             group_id, 
@@ -186,7 +186,7 @@ export const removeMember = async(
     adminId:number,
     group_id:number,
     user_id:number
-) => {
+):Promise<GroupMember> => {
     //check loggedIn user is Admin or not
     const isAdmin = await GroupMember.findOne({
         where:{
@@ -225,7 +225,7 @@ export const removeMember = async(
     return member;
 }
 
-export const leaveGroup = async(user_id:number, group_id:number) => {
+export const leaveGroup = async(user_id:number, group_id:number):Promise<GroupMember> => {
     const member = await GroupMember.findOne({
         where:{
             user_id,

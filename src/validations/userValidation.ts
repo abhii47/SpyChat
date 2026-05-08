@@ -18,7 +18,7 @@ export const updateProfileSchema = z.object({
 );
 
 export const searchQuerySchema = z.object({
-    name:z
+    query:z
         .string()
         .trim()
         .min(1, "Search query cannot be empty")

@@ -72,6 +72,7 @@ export const initSocket = (io:Server) => {
         } catch (err:any) {
             logger.error("autoJoinRoom error", { stack:err.stack });
             emitSocketError(socket, "connection", err.message);
+            socket.disconnect(true);
         }
 
         //Register handlers
