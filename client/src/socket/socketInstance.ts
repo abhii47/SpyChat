@@ -22,7 +22,7 @@ export const connectSocket = (token: string): Socket => {
   )
 
   socket.on('connect', () => {
-    console.log('✅ Socket connected')
+    console.log('Socket connected')
   })
 
   socket.on('disconnect', (reason) => {
@@ -30,7 +30,7 @@ export const connectSocket = (token: string): Socket => {
     if (reason === 'io server disconnect') socket?.connect()
   })
 
-  socket.on('connect_error', async (err: any) => {
+  socket.on('connect_error', async (err:any) => {
     const code = err?.data?.code
     if (code === 'TOKEN_EXPIRED') {
       try {
