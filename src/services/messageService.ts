@@ -287,8 +287,8 @@ export const getUnreadCount = async(
     roomId:number
 ) => {
     const whereCondition = roomType === "conversation"
-            ? { conversation_id:roomId }
-            : { group_id:roomId };
+            ? { conversation_id:roomId, sender_id:{[Op.ne]:userId} }
+            : { group_id:roomId, sender_id:{[Op.ne]:userId} };
     const allmessages = await Message.findAll({
         where:whereCondition,
         attributes:["message_id"],

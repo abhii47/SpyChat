@@ -4,6 +4,8 @@ import { io, Socket } from 'socket.io-client'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import type { SocketError } from '../types'
+import { registerConvEvents } from './convEvents'
+import { registerStatusEvents } from './statusEvents'
 
 let socket: Socket | null = null
 
@@ -23,6 +25,8 @@ export const connectSocket = (token: string): Socket => {
 
   socket.on('connect', () => {
     console.log('Socket connected')
+    registerStatusEvents(socket!)
+    registerConvEvents(socket!)
   })
 
   socket.on('disconnect', (reason) => {
