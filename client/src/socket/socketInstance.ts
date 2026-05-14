@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import type { SocketError } from '../types'
 import { registerConvEvents } from './convEvents'
 import { registerStatusEvents } from './statusEvents'
+import { registerChatEvents } from './chatEvents'
 
 let socket: Socket | null = null
 
@@ -27,6 +28,7 @@ export const connectSocket = (token: string): Socket => {
     console.log('Socket connected')
     registerStatusEvents(socket!)
     registerConvEvents(socket!)
+    registerChatEvents(socket!)
   })
 
   socket.on('disconnect', (reason) => {
