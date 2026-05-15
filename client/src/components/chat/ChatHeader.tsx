@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import { useChatStore } from "../../store/chatStore";
 import { useConvStore } from "../../store/convStore";
 import { useGroupStore } from "../../store/groupStore";
 import type { ActiveChat } from "../../types";
 import Avatar from "../ui/Avatar";
+import { Info } from 'lucide-react'
+import GroupDetailsModal from "../group/GroupDetailModal";
 
 interface Props{
     activeChat:ActiveChat
@@ -13,6 +16,7 @@ const ChatHeader = ({ activeChat }:Props) => {
     const { user } = useAuthStore()
     const { conversations } = useConvStore()
     const { groups } = useGroupStore()
+    const [showDetails, setShowDetails] = useState(false)
     const { isUserOnline } = useChatStore()
 
     // Conversation Header
@@ -56,6 +60,7 @@ const ChatHeader = ({ activeChat }:Props) => {
     )
     if(!groupItem) return null
     return (
+    <>
         <div className="flex items-center gap-3 px-4 py-3
                         border-b border-slate-700/50
                         bg-slate-900/50">
@@ -72,7 +77,24 @@ const ChatHeader = ({ activeChat }:Props) => {
                     Group · {groupItem.role}
                 </p>
             </div>
+            {/* Details button */}
+            <button
+                onClick={() => setShowDetails(true)}
+                className="p-2 text-slate-400 hover:text-white
+                        hover:bg-slate-800 rounded-lg transition-colors"
+                title="Group details"
+            >
+                <Info size={18} />
+            </button>
         </div>
+        {/* Modal */}
+        {showDetails && (
+        <GroupDetailsModal
+            groupId={activeChat.id}
+            onClose={() => setShowDetails(false)}
+        />
+        )}
+    </>
     )
 }
 

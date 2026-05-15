@@ -7,6 +7,7 @@ import type { SocketError } from '../types'
 import { registerConvEvents } from './convEvents'
 import { registerStatusEvents } from './statusEvents'
 import { registerChatEvents } from './chatEvents'
+import { registerGroupEvents } from './groupEvents'
 
 let socket: Socket | null = null
 
@@ -29,6 +30,7 @@ export const connectSocket = (token: string): Socket => {
     registerStatusEvents(socket!)
     registerConvEvents(socket!)
     registerChatEvents(socket!)
+    registerGroupEvents(socket!)
   })
 
   socket.on('disconnect', (reason) => {

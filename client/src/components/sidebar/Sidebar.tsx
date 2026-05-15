@@ -9,7 +9,9 @@ import { disconnectSocket } from '../../socket/socketInstance'
 import Avatar from '../ui/Avatar'
 import ConversationItem from './ConversationItem'
 import GroupItem from './GroupItem'
-import { MessageSquare, Users, LogOut } from 'lucide-react'
+import { MessageSquare, Users, LogOut, Plus } from 'lucide-react'
+import SearchBar from './SearchBar'
+import CreateGroupModal from '../group/CreateGroupModal'
 
 const Sidebar = () => {
   const { user, clearAuth } = useAuthStore()
@@ -17,6 +19,7 @@ const Sidebar = () => {
   const { groups, setGroups } = useGroupStore()
   const { sidebarTab, setSidebarTab } = useUiStore()
   const [isLoading, setIsLoading] = useState(true)
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,12 +57,10 @@ const Sidebar = () => {
     >
       {/* Header */}
       <div className="flex h-11 items-center justify-center px-3 border-b border-slate-700/50 bg-slate-900/30">
-        <h1
-          className="m-0 font-['Times_New_Roman'] text-lg leading-none font-bold tracking-wide text-zinc-200"
-        >
-          SpyChat
-        </h1>
+        <h1 className="m-0 font-['Times_New_Roman'] text-lg leading-none font-bold tracking-wide text-zinc-200">SpyChat</h1>
       </div>
+      {/* SearchBar add */}
+        <SearchBar />
 
       {/* Tab Switcher */}
       <div className="flex p-2 gap-1 border-b border-slate-700/50">
@@ -102,7 +103,25 @@ const Sidebar = () => {
           <Users size={15} />
           Groups
         </button>
+
+        {/* ✅ Create Group button — Groups tab mein ho toh dikhao */}
+        {sidebarTab === 'groups' && (
+          <button
+            onClick={() => setShowCreateGroup(true)}
+            className="p-2 text-slate-400 hover:text-blue-400
+                      hover:bg-slate-700/50 rounded-lg
+                      transition-colors"
+            title="Create Group"
+          >
+            <Plus size={18} />
+          </button>
+        )}
       </div>
+
+      {/* Modal */}
+      {showCreateGroup && (
+        <CreateGroupModal onClose={() => setShowCreateGroup(false)} />
+      )}
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
