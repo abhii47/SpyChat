@@ -219,6 +219,67 @@ export const createMessageRead = async(
 
 }
 
+type markAllReadBody = {
+    roomType:'conversation' | 'group'
+    roomId:number
+}
+export const markAllRead = async(payload:markAllReadBody, user_id:number) => {
+    const { roomType, roomId } = payload;
+
+    let messages;
+    if(roomType === "conversation"){
+        const isMember = await ConversationMember.findOne({
+            where: {
+                conversation_id:roomId,
+                user_id
+            }
+        })
+
+        if(!isMember){
+            logger.warn("Not a member of this conversation");
+            throw new AppError("Not a member of this conversation", 403);
+        }
+
+        messages = await Message.findAll({
+            where:{
+                conversation_id:roomId,
+                sender_id:{[Op.ne]:user_id}
+            }
+        })
+    }else {
+        const isMember = await GroupMember.findOne({
+            where: {
+                group_id:roomId,
+                user_id,
+                left_at:null
+            }
+        })
+
+        if(!isMember){
+            logger.warn("Not a member of this group");
+            throw new AppError("Not a member of this group", 403);
+        }
+
+        messages = await Message.findAll({
+            where:{
+                group_id:roomId,
+                sender_id:{[Op.ne]:user_id}
+            }
+        })
+    }
+
+    const messageIds = messages.map((m) => ({
+        message_id:m.message_id,
+        user_id,
+        read_at:new Date()
+    }));
+
+
+    const readMessages = await MessageRead.bulkCreate(messageIds);
+
+    return readMessages;
+}
+
 type mediaBody = {
     roomId:number,
     roomType:"conversation" | "group"
@@ -313,6 +374,7 @@ export default {
     deleteMessage,
     checkMessageRead,
     createMessageRead,
+    markAllRead,
     uploadMediaFiles,
     getUnreadCount
 }

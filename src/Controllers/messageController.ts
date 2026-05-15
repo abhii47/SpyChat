@@ -112,6 +112,20 @@ export const createMessageRead = async(
     }
 }
 
+export const markAllRead = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const user_id = req.user?.id;
+        const data = await messageService.markAllRead(req.body, user_id);
+        successResponse("All Messages Read Successfully", 200, res, data);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export const uploadMediaFiles = async(
     req:Request,
     res:Response,
@@ -156,6 +170,7 @@ export default {
     deleteMessage,
     checkMessageRead,
     createMessageRead,
+    markAllRead,
     uploadMediaFiles,
     getUnreadCount
 }
