@@ -114,3 +114,12 @@
     background: var(--code-bg);
   }
 }
+
+@theme {
+  --animate-slide-in-right: slide-in-right 0.25s ease-out;
+
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);   opacity: 1; }
+  }
+}
