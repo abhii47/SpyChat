@@ -12,6 +12,7 @@ import GroupItem from './GroupItem'
 import { MessageSquare, Users, LogOut, Plus } from 'lucide-react'
 import SearchBar from './SearchBar'
 import CreateGroupModal from '../group/CreateGroupModal'
+import ProfilePanel from '../profile/ProfilePanel'
 
 const Sidebar = () => {
   const { user, clearAuth } = useAuthStore()
@@ -20,6 +21,7 @@ const Sidebar = () => {
   const { sidebarTab, setSidebarTab } = useUiStore()
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,21 +176,53 @@ const Sidebar = () => {
       {/* Profile Footer */}
       <div className="p-3 border-t border-slate-700/50
                       flex items-center gap-3">
-        <Avatar
-          src={user?.avatar || null}
-          name={user?.name || 'User'}
-          size="sm"
-          isOnline={true}
-        />
+        <button onClick={() => setShowProfile(true)}
+                className="w-full flex items-center gap-3
+                          hover:bg-slate-800/50 rounded-xl
+                          p-2 transition-clors duration-150
+                          text-left"
+        >
+          <Avatar
+            src={user?.avatar || null}
+            name={user?.name || 'User'}
+            size="sm"
+            isOnline={true}
+          />   
 
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">
-            {user?.name}
-          </p>
-          <p className="text-xs text-slate-400 truncate">
-            {user?.email}
-          </p>
-        </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">
+              {user?.name}
+            </p>
+            <p className="text-xs text-slate-400 truncate">
+              {user?.email}
+            </p>
+          </div>
+
+          {/* Settings icon */}
+          <div className="text-slate-500">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724
+                      1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724
+                      1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724
+                      1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724
+                      1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724
+                      1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724
+                      1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724
+                      1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608
+                      2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+        </button>
+
+        {/* Profile Panel Modal */}
+        {showProfile && (
+          <ProfilePanel onClose={() => setShowProfile(false)} />
+        )}
 
         {/* Logout */}
         <button
