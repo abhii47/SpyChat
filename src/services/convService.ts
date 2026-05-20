@@ -112,6 +112,59 @@ export const getMyConversations = async (user_id: number) => {
 
 }
 
+export const getConversationById = async (
+    user_id:number,
+    conversation_id:number
+) => {
+    const member = await ConversationMember.findOne({
+        where: { user_id, conversation_id },
+        include: [
+            {
+                model: Conversation,
+                as: "conversation",
+                include: [
+                    {
+                        model: ConversationMember,
+                        as: "members",
+                        where: { user_id: { [Op.ne]: user_id } },
+                        attributes:["conversation_member_id","created_at"],
+                        include: [
+                            {
+                                model: User,
+                                as: "user",
+                                attributes: ["user_id", "name", "avatar", "last_seen"],
+                            }
+                        ]
+                    },
+                    {
+                        model: Message,
+                        as: "messages",
+                        limit: 1,
+                        order: [['created_at', 'DESC']],
+                        separate:true
+                    }
+                ]
+            }
+        ]
+    });
+
+    if(!member){
+        logger.warn("Conversation not found", { user_id, conversation_id });
+        throw new AppError("Conversation not found", 404);
+    }
+
+    const conv:any = (member as any).conversation;
+    const unreadCount = await getUnreadCount(user_id, "conversation", conv.conversation_id);
+
+    return {
+        conversation_id: conv.conversation_id,
+        members: conv.members,
+        lastMessage: conv.messages?.[0] || null,
+        unread_count: unreadCount,
+        updated_at:conv.updated_at,
+    };
+}
+
 export const getConversationMessages = async(
     user_id:number,
     conversation_id:number,
@@ -147,6 +200,7 @@ export const getConvMembers = async (user_id: number) => {
 export default {
     startConversation,
     getMyConversations,
+    getConversationById,
     getConversationMessages,
     getConvMembers
 }

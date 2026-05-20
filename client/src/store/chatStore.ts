@@ -26,12 +26,21 @@ export const useChatStore = create<ChatStore>((set,get) => ({
         })),
 
     addMessage: (roomKey, message) =>
-        set((state) => ({
-            messages:{
-                ...state.messages,
-                [roomKey]:[message, ...state.messages[roomKey]]
+        set((state) => {
+            const currentMessages = state.messages[roomKey] || []
+            const alreadyExists = currentMessages.some(
+                (m) => m.message_id === message.message_id
+            )
+
+            if(alreadyExists) return state
+
+            return {
+                messages:{
+                    ...state.messages,
+                    [roomKey]:[...currentMessages, message]
+                }
             }
-        })),
+        }),
 
     removeMessage: (roomKey, messageId) => 
         set((state) => ({

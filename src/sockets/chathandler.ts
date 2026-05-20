@@ -3,6 +3,8 @@ import messageService from "../services/messageService";
 import logger from "../utils/logger";
 import { emitSocketError } from "../utils/socketError";
 import { JwtPayload } from "jsonwebtoken";
+import { Op } from "sequelize";
+import { Message, MessageRead } from "../models";
 
 type SendMessagePayload = {
     conversation_id?:number;
@@ -128,6 +130,74 @@ export const chatHandler = (io:Server, socket:Socket) => {
         } catch (err:any) {
             logger.error("mark_read error", { stack: err.stack });
             emitSocketError(socket, "mark_read", err.message);
+        }
+    });
+
+    // Mark All Messages in a Room as Read
+    socket.on("mark_all_read", async (payload: { roomId: number; roomType: "conversation" | "group" }) => {
+        try {
+            const { roomId, roomType } = payload;
+
+            if (!roomId || !roomType) {
+                emitSocketError(socket, "mark_all_read", "roomId and roomType are required");
+                return;
+            }
+
+            if (roomType !== "conversation" && roomType !== "group") {
+                emitSocketError(socket, "mark_all_read", "Invalid roomType");
+                return;
+            }
+
+            const whereCondition = roomType === "conversation"
+                ? { conversation_id: roomId, sender_id: { [Op.ne]: user.id } }
+                : { group_id: roomId, sender_id: { [Op.ne]: user.id } };
+
+            // Find all unread messages from other users in this room
+            const unreadMessages = await Message.findAll({
+                where: {
+                    ...whereCondition,
+                    "$reads.message_read_id$": null
+                },
+                include: [
+                    {
+                        model: MessageRead,
+                        as: "reads",
+                        required: false,
+                        where: { user_id: user.id }
+                    }
+                ],
+                attributes: ["message_id"],
+                subQuery: false
+            });
+
+            if (unreadMessages.length > 0) {
+                const readEntries = unreadMessages.map(msg => ({
+                    message_id: msg.message_id,
+                    user_id: user.id,
+                    read_at: new Date()
+                }));
+                await MessageRead.bulkCreate(readEntries);
+            }
+
+            // Emit confirmation back to the user's active sockets so their sidebar/store updates in real-time
+            io.to(`user_${user.id}`).emit("messages_read", {
+                roomId,
+                roomType,
+                unread_count: 0
+            });
+
+            // Also broadcast read status update to other users in the conversation/group
+            const room = roomType === "conversation" ? `room_conv_${roomId}` : `room_group_${roomId}`;
+            socket.to(room).emit("messages_read_by_other", {
+                roomId,
+                roomType,
+                read_by: user.id
+            });
+
+            logger.info("Marked all messages as read", { userId: user.id, roomId, roomType, count: unreadMessages.length });
+        } catch (err: any) {
+            logger.error("mark_all_read error", { stack: err.stack });
+            emitSocketError(socket, "mark_all_read", err.message);
         }
     });
 

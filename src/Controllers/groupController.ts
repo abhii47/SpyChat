@@ -31,6 +31,21 @@ export const createGroup = async(
     }
 }
 
+export const updateGroup = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const userId:number = req.user?.id;
+        const avatar = req.file as Express.Multer.File;
+        const group = await groupService.updateGroup(req.body,userId,avatar);
+        successResponse("Group Updated Successfully", 200, res, group);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export const uploadGroupAvatar = async(
     req:Request,
     res:Response,
@@ -161,12 +176,34 @@ export const getGroupMessages = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const deleteGroup = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const userId:number = req.user?.id;
+        const group_id = Number(req.params.id);
+
+        if(isNaN(group_id)){
+            throw new Error("Invalid group ID");
+        }
+
+        const group = await groupService.deleteGroup(userId,group_id);
+        successResponse("Group Deleted Successfully", 200, res, group);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export default {
     createGroup,
+    updateGroup,
     uploadGroupAvatar,
     getMyGroups,
     getGroupDetails,
     addMember,
     removeMember,
-    getGroupMessages
+    getGroupMessages,
+    deleteGroup
 }

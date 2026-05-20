@@ -73,6 +73,67 @@ export const createGroup = async(
     }
 }
 
+type UpdateGroup = {
+    group_id:number,
+    name?:string,
+    description?:string,
+}
+export const updateGroup = async(
+    group:UpdateGroup,
+    userId:number,
+    avatar?:Express.Multer.File
+) => {
+    const { group_id, name, description } = group;
+    const t = await sequelize.transaction();
+    try {
+        const group = await Group.findOne({
+            where:{ 
+                group_id,
+            },
+            transaction:t
+        });
+
+        if(!group){
+            logger.warn("Group not found");
+            throw new AppError("Group not found", 404);
+        }
+
+        const isMember = await GroupMember.findOne({
+            where:{
+                user_id:userId,
+                group_id,
+            },
+            transaction:t
+        });
+
+        if(!isMember){
+            logger.warn("Access Denied");
+            throw new AppError("Access Denied", 403);
+        }
+
+        if(isMember.role !== role.ADMIN){
+            logger.warn("Only admin can update group");
+            throw new AppError("Only admin can update group", 403);
+        }
+
+        if(avatar){
+
+            const avatarUrl = await uploadFile(avatar,getEnv("GROUP_FOLDER"),'image');
+            group.avatar = avatarUrl.secure_url;
+        }
+        name && (group.name = name);
+        description && (group.description = description);
+
+        await group.save({transaction:t});
+        await t.commit();
+        return group;
+    } catch (err:any) {
+        await t.rollback();
+        logger.error("Group Update : failed", { stack:err.stack });
+        throw err;
+    }
+}
+
 export const uploadGroupAvatar = async(
     avatar:Express.Multer.File,
 ):Promise<string> => {
@@ -296,6 +357,50 @@ export const getMyGroups = async(user_id:number) => {
     return result;
 }
 
+export const getGroupById = async(user_id:number, group_id:number) => {
+    const member = await GroupMember.findOne({
+        where:{ user_id, group_id, left_at:null },
+        include:[
+            {
+                model:Group,
+                as:"group",
+                attributes:["group_id","name","description","avatar","created_by","created_at"],
+                required:true,
+                include:[
+                    {
+                        model:User,
+                        as:"admin",
+                        attributes:["user_id","name","avatar"]
+                    },
+                    {
+                        model:Message,
+                        as:"messages",
+                        separate:true,
+                        limit:1,
+                        order:[["created_at",'DESC']]
+                    }
+                ]
+            }
+        ]
+    });
+
+    if(!member){
+        logger.warn("Group not found for user", { user_id, group_id });
+        throw new AppError("Group not found", 404);
+    }
+
+    const group:any = (member as any).group;
+    const unreadCount = await getUnreadCount(user_id,"group",group.group_id);
+
+    return {
+        group,
+        role:member.role,
+        joined_at:member.joined_at,
+        last_message:group.messages?.[0] || null,
+        unread_count:unreadCount,
+    };
+}
+
 export const getGroupDetails = async(user_id:number, group_id:number) => {
     const isMember = await GroupMember.findOne({
         where:{ 
@@ -377,15 +482,64 @@ export const getGroupMembers = async(user_id:number) => {
     return members;
 }
 
+export const deleteGroup = async(user_id:number, group_id:number) => {
+
+    const group = await Group.findOne({
+        where:{ group_id }
+    });
+
+    if(!group){
+        logger.warn("Group not found");
+        throw new AppError("Group not found", 404);
+    }
+
+    const isMember = await GroupMember.findOne({
+        where:{ group_id, user_id, left_at:null, role:role.ADMIN }
+    });
+
+    if(!isMember){
+        logger.warn("Only admin can delete group");
+        throw new AppError("Only admin can delete group", 403);
+    }
+
+    const message = await Message.findAll({
+        where:{ group_id },
+        attributes:["message_id"],
+    })
+    
+    const messageIds = message.map((m) => m.message_id);
+
+    await Promise.all([
+        MessageRead.destroy({
+            where:{
+                message_id:messageIds
+            }
+        }),
+        Message.destroy({
+            where:{ group_id }
+        }),
+        GroupMember.destroy({
+            where:{ group_id }
+        }),
+    ]);
+    await Group.destroy({
+        where:{ group_id }
+    });
+    return true;
+}
+
 export default {
     createGroup,
+    updateGroup,
     uploadGroupAvatar,
     createGroupSocket,
     addMember,
     removeMember,
     leaveGroup,
     getMyGroups,
+    getGroupById,
     getGroupDetails,
     getGroupMessages,
-    getGroupMembers
+    getGroupMembers,
+    deleteGroup
 }

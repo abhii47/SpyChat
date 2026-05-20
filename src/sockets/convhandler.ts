@@ -27,20 +27,26 @@ export const convHandler = (io:Server,socket:Socket) => {
             }
             
             const { conversation, isNew } = await convService.startConversation(userId, receiver_id);
+            const conversationId = conversation.conversation_id;
+            const senderConversation = await convService.getConversationById(userId, conversationId);
             const conversationPayload = {
-                conversation,
+                conversation: senderConversation,
                 isNew,
             };
 
             if(isNew){
-                const room = `room_conv_${conversation.conversation_id}`;
+                const receiverConversation = await convService.getConversationById(receiver_id, conversationId);
+                const room = `room_conv_${conversationId}`;
                 await joinNewRoom(io, userId, room);
                 await joinNewRoom(io, receiver_id, room);
-                socket.to(`user_${receiver_id}`).emit("notify", { type:"success", conversationPayload });
+                socket.to(`user_${receiver_id}`).emit("notify", {
+                    type:"conversation_created",
+                    conversation:receiverConversation
+                });
             }
 
             socket.emit("join_conv_success", conversationPayload);
-            logger.info("User joined conversation", { conversation_id:conversation.conversation_id });
+            logger.info("User joined conversation", { conversation_id:conversationId });
             
         } catch (err:any) {
             logger.error("joined conversation error", { stack: err.stack });

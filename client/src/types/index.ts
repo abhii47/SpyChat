@@ -97,7 +97,7 @@ export interface GroupListItem {
         }
     }
     role:'admin' | 'member',
-    joined_at:Date,
+    joined_at:string,
     last_message:Message | null,
     unread_count:number
 }

@@ -16,7 +16,7 @@ export const registerConvEvents = (socket:Socket) => {
     });
 
     socket.on('notify', (data:any) => {
-        if(data.conversation_id && !data.message_id){
+        if(data.type === 'conversation_created'){
             useConvStore.getState().addConversation(data.conversation)
         }
     })

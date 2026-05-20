@@ -12,6 +12,7 @@ router.post("/send",auth,uploadMultiple("media"),validateBody(SendMessageSchema)
 router.delete("/:messageId", auth, messageController.deleteMessage);
 router.post("/:messageId/read",auth,messageController.createMessageRead);
 router.get("/:messageId",auth,messageController.checkMessageRead);
+router.post("/mark-all-read",auth,messageController.markAllRead);
 router.get("/:roomType/:roomId",auth,messageController.getMessage);
 router.get("/:roomType/:roomId/unread-count",auth,messageController.getUnreadCount);
 
