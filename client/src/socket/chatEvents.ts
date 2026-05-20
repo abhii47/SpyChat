@@ -6,7 +6,15 @@ import { useConvStore } from "../store/convStore";
 import { useGroupStore } from "../store/groupStore";
 
 export const registerChatEvents = (socket:Socket) => {
-    socket.on('new_message', (message:Message) => {
+    socket.on('new_message', (payload) => {
+        const message:Message = {
+            ...payload.message,
+            sender: payload.message.sender || {
+                user_id: payload.sender_id,
+                name: payload.sender_name,
+                avatar: payload.sender_image,
+            },
+        }
         const roomKey = message.conversation_id
             ? `conv_${message.conversation_id}`
             : `group_${message.group_id}`
