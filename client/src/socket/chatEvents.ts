@@ -42,6 +42,13 @@ export const registerChatEvents = (socket:Socket) => {
                 useGroupStore.getState().incrementUnread(message.group_id)
             }
         }
+
+        if (isActiveRoom && activeChat) {
+            socket.emit('mark_all_read', {
+                roomId: activeChat.id,
+                roomType: activeChat.type
+            });
+        }
     })
 
     socket.on('typing', ({userId, isTyping}) => {
@@ -57,6 +64,14 @@ export const registerChatEvents = (socket:Socket) => {
 
     socket.on('message_read', ({message_id, read_by}) => {
         console.log(`Message ${message_id} read by ${read_by}`)
+    })
+
+    socket.on('messages_read', ({ roomId, roomType }) => {
+        if (roomType === 'conversation') {
+            useConvStore.getState().resetUnread(roomId);
+        } else {
+            useGroupStore.getState().resetUnread(roomId);
+        }
     })
 
     socket.on('notify', (data:any) => {

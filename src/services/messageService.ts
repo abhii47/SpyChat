@@ -350,22 +350,23 @@ export const getUnreadCount = async(
     const whereCondition = roomType === "conversation"
             ? { conversation_id:roomId, sender_id:{[Op.ne]:userId} }
             : { group_id:roomId, sender_id:{[Op.ne]:userId} };
-    const allmessages = await Message.findAll({
-        where:whereCondition,
-        attributes:["message_id"],
+
+    const unreadCount = await Message.count({
+        where: {
+            ...whereCondition,
+            "$reads.message_read_id$": null
+        },
+        include: [
+            {
+                model: MessageRead,
+                as: "reads",
+                required: false,
+                where: { user_id: userId }
+            }
+        ],
     });
 
-    if(allmessages.length === 0) return 0;
-    const allmessageIds = allmessages.map((msg) => msg.message_id);
-
-    const readCount = await MessageRead.count({
-        where:{
-            message_id:allmessageIds,
-            user_id:userId,
-        }
-    });
-
-    return allmessageIds.length - readCount;
+    return unreadCount;
 }
 
 export default {
