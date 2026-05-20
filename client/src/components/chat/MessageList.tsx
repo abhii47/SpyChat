@@ -3,6 +3,7 @@ import { useChatStore } from '../../store/chatStore'
 import { useConvStore } from '../../store/convStore'
 import { useGroupStore } from '../../store/groupStore'
 import { getMessage } from '../../api/messageApi'
+import { getSocket } from '../../socket/socketInstance'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import type { ActiveChat } from '../../types'
@@ -61,6 +62,14 @@ const MessageList = ({ activeChat }: Props) => {
       resetConvUnread(activeChat.id)
     } else {
       resetGroupUnread(activeChat.id)
+    }
+
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('mark_all_read', {
+        roomId: activeChat.id,
+        roomType: activeChat.type
+      });
     }
 
   }, [activeChat.id, activeChat.type])
