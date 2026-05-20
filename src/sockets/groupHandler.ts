@@ -4,6 +4,7 @@ import logger from "../utils/logger";
 import groupService from "../services/groupService";
 import { joinNewRoom } from ".";
 import { redis } from "../config/redis";
+import { Group, User } from "../models";
 
 type GroupId = {
     group_id:number
@@ -59,10 +60,21 @@ export const groupHandler = (io:Server, socket:Socket) => {
                 allUserIds.map(id => joinNewRoom(io,id,room))
             )
 
-            socket.emit("create_group_success", { type:"group created", group, member_count:allUserIds.length });
+            const creatorGroup = await groupService.getGroupById(userId,group.group_id);
+            socket.emit("create_group_success", { groupItem:creatorGroup });
             io.to(room).emit("notify", { type:"added members",members:memberIds, actor_id:userId });
-            memberIds.map((m) => 
-                socket.to(`user_${m}`).emit("notify", { type:"added to group", user:m, group:group.name })
+            await Promise.all(
+                memberIds.map(async(m) => {
+                    const memberGroup = await groupService.getGroupById(m, group.group_id);
+                    io.to(`user_${m}`).emit("added_to_group", {
+                        groupItem:memberGroup,
+                        added_by:{
+                            user_id:userId,
+                            name:(socket as any).user.name,
+                            avatar:(socket as any).user.avatar
+                        }
+                    });
+                })
             );
             logger.info("User created group", { 
                 group_id:group.group_id, 
@@ -129,6 +141,36 @@ export const groupHandler = (io:Server, socket:Socket) => {
             const room = `room_group_${group_id}`;
             await joinNewRoom(io, user_id, room);
 
+            // Fetch the new member's group details and notify them in real-time
+            const memberGroup = await groupService.getGroupById(user_id, group_id);
+            io.to(`user_${user_id}`).emit("added_to_group", {
+                groupItem: memberGroup,
+                added_by: {
+                    user_id: userId,
+                    name: (socket as any).user.name,
+                    avatar: (socket as any).user.avatar
+                }
+            });
+
+            // Fetch added user details to notify group room with member_added event
+            const addedUser = await User.findOne({
+                where: { user_id },
+                attributes: ["user_id", "name", "avatar"]
+            });
+
+            io.to(room).emit("member_added", {
+                group_id,
+                new_member: {
+                    user_id: addedUser?.user_id,
+                    name: addedUser?.name,
+                    avatar: addedUser?.avatar
+                },
+                added_by: {
+                    user_id: userId,
+                    name: (socket as any).user.name
+                }
+            });
+
             io.to(room).emit("notify", { user:user_id, added_by:userId, group:group_id});
             socket.emit("add_member_success", { member });
             logger.info("User added member", { adminId:userId, group_id, user_id });
@@ -153,17 +195,41 @@ export const groupHandler = (io:Server, socket:Socket) => {
                 return;
             }
 
+            // Fetch group name first for notifications
+            const groupObj = await Group.findByPk(group_id, { attributes: ["name"] });
+            const groupName = groupObj?.name || "the group";
+
             const member = await groupService.removeMember(userId, group_id, user_id);
 
             const room = `room_group_${group_id}`;
             const socketId = await redis.get(`Online:${user_id}`);
             if(socketId){
-                const socket = io.sockets.sockets.get(socketId)
-                if(socket){
-                    socket.leave(room);
-                    socket.emit("notify", { user:userId, removed_from:group_id });
+                const targetSocket = io.sockets.sockets.get(socketId);
+                if(targetSocket){
+                    targetSocket.leave(room);
                 }
             }
+
+            // Emit to the removed user's room to instantly clean up their client store and show a toast
+            io.to(`user_${user_id}`).emit("removed_from_group", {
+                group_id,
+                group_name: groupName,
+                removed_by: {
+                    user_id: userId,
+                    name: (socket as any).user.name
+                }
+            });
+
+            // Emit to the group room to notify other members
+            io.to(room).emit("member_removed", {
+                group_id,
+                user_id,
+                removed_by: {
+                    user_id: userId,
+                    name: (socket as any).user.name
+                }
+            });
+
             io.to(room).emit("notify", { user:user_id, removed_by:userId, group:group_id });
             socket.emit("remove_member_success", { member });
             logger.info("User removed member", { adminId:userId, group_id, user_id });
@@ -191,8 +257,16 @@ export const groupHandler = (io:Server, socket:Socket) => {
 
             const room = `room_group_${group_id}`;
             socket.leave(room);
+
+            // Emit member_left to notify remaining members
+            io.to(room).emit("member_left", {
+                group_id,
+                user_id: userId,
+                name: (socket as any).user.name
+            });
+
             io.to(room).emit("notify", { user:userId, left_from:group_id});
-            socket.emit("leave_group_success", { member });
+            socket.emit("leave_group_success", { group_id, member });
             logger.info("User left group", { userId, group_id });
         } catch (err:any) {
             logger.error("leave_group error", { stack:err.stack });

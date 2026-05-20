@@ -12,7 +12,10 @@ import { registerGroupEvents } from './groupEvents'
 let socket: Socket | null = null
 
 export const connectSocket = (token: string): Socket => {
-  if (socket?.connected) socket.disconnect()
+  if (socket) {
+    socket.removeAllListeners()
+    socket.disconnect()
+  }
 
   socket = io(
     import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000',
@@ -25,12 +28,13 @@ export const connectSocket = (token: string): Socket => {
     }
   )
 
+  registerStatusEvents(socket)
+  registerConvEvents(socket)
+  registerChatEvents(socket)
+  registerGroupEvents(socket)
+
   socket.on('connect', () => {
     console.log('Socket connected')
-    registerStatusEvents(socket!)
-    registerConvEvents(socket!)
-    registerChatEvents(socket!)
-    registerGroupEvents(socket!)
   })
 
   socket.on('disconnect', (reason) => {

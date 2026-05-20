@@ -357,6 +357,50 @@ export const getMyGroups = async(user_id:number) => {
     return result;
 }
 
+export const getGroupById = async(user_id:number, group_id:number) => {
+    const member = await GroupMember.findOne({
+        where:{ user_id, group_id, left_at:null },
+        include:[
+            {
+                model:Group,
+                as:"group",
+                attributes:["group_id","name","description","avatar","created_by","created_at"],
+                required:true,
+                include:[
+                    {
+                        model:User,
+                        as:"admin",
+                        attributes:["user_id","name","avatar"]
+                    },
+                    {
+                        model:Message,
+                        as:"messages",
+                        separate:true,
+                        limit:1,
+                        order:[["created_at",'DESC']]
+                    }
+                ]
+            }
+        ]
+    });
+
+    if(!member){
+        logger.warn("Group not found for user", { user_id, group_id });
+        throw new AppError("Group not found", 404);
+    }
+
+    const group:any = (member as any).group;
+    const unreadCount = await getUnreadCount(user_id,"group",group.group_id);
+
+    return {
+        group,
+        role:member.role,
+        joined_at:member.joined_at,
+        last_message:group.messages?.[0] || null,
+        unread_count:unreadCount,
+    };
+}
+
 export const getGroupDetails = async(user_id:number, group_id:number) => {
     const isMember = await GroupMember.findOne({
         where:{ 
@@ -493,6 +537,7 @@ export default {
     removeMember,
     leaveGroup,
     getMyGroups,
+    getGroupById,
     getGroupDetails,
     getGroupMessages,
     getGroupMembers,
