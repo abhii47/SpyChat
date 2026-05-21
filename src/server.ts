@@ -38,7 +38,7 @@ app.use(helmet());
 app.use(
   cors({
     origin:(origin, callback) => {
-      const allowOrigins =[ getEnv("CLIENT_URL"), getEnv("VITE_URL") ];
+      const allowOrigins =[ getEnv("APP_URL"), getEnv("VITE_URL") ];
       if(!origin || allowOrigins.includes(origin)){
         callback(null, true);
       }else{
@@ -60,7 +60,7 @@ app.use(requestLogger);
 //Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: [getEnv("CLIENT_URL"), getEnv("VITE_URL")],
+    origin: [getEnv("APP_URL"), getEnv("VITE_URL")],
     credentials: true,
   }
 });
