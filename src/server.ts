@@ -104,7 +104,7 @@ const serverStart = async () => {
     await sequelize.sync();
     logger.info("Table Synced Successfully");
 
-    const PORT = Number(getEnv("PORT"));
+    const PORT = Number(getEnv("PORT")) || 4000;
     httpServer.listen(PORT, () => {
       logger.info(`Server running on http://localhost:${PORT}`);
       logger.info("socket is ready for connection");
