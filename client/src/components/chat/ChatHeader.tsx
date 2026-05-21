@@ -33,7 +33,7 @@ const ChatHeader = ({ activeChat }:Props) => {
         const online = isUserOnline(otherUser.user_id)
 
         return (
-            <div className="flex items-center gap-3 px-4 py-3
+            <div className="flex min-w-0 items-center gap-3 px-3 py-2.5 md:px-4 md:py-3
                             border-b border-slate-700/50
                             bg-slate-900/50 backdrop-blur-sm">
                 <Avatar
@@ -42,8 +42,8 @@ const ChatHeader = ({ activeChat }:Props) => {
                     size="md"
                     isOnline={online}
                 />
-                <div>
-                    <p className="text-sm font-semibold text-white">
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">
                         {otherUser.name}
                     </p>
                     <p className={`text-xs ${online ? 'text-green-400' : 'text-slate-500'}`}>
@@ -61,7 +61,7 @@ const ChatHeader = ({ activeChat }:Props) => {
     if(!groupItem) return null
     return (
     <>
-        <div className="flex items-center gap-3 px-4 py-3
+        <div className="flex min-w-0 items-center gap-3 px-3 py-2.5 md:px-4 md:py-3
                         border-b border-slate-700/50
                         bg-slate-900/50">
             <Avatar
@@ -69,8 +69,8 @@ const ChatHeader = ({ activeChat }:Props) => {
                 name={groupItem.group.name}
                 size="md"
             />
-            <div>
-                <p className="text-sm font-semibold text-white">
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">
                     {groupItem.group.name}
                 </p>
                 <p className="text-xs text-slate-500">

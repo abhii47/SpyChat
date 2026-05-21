@@ -136,22 +136,22 @@ const MessageInput = ({ activeChat }: Props) => {
   const canSend = (content.trim() || mediaFiles.length > 0) && !isSending
 
   return (
-    <div className="border-t border-slate-700/50 p-3"
+    <div className="border-t border-slate-700/50 p-2.5 md:p-3"
          style={{ backgroundColor: 'var(--color-chat-sidebar)' }}>
 
       {/* Media previews */}
       {mediaPreviews.length > 0 && (
-        <div className="flex gap-2 mb-3 flex-wrap">
+        <div className="mb-2 flex gap-2 overflow-x-auto pb-1 md:mb-3 md:flex-wrap md:overflow-visible md:pb-0">
           {mediaPreviews.map((preview, index) => (
             <div key={index} className="relative">
               {mediaFiles[index]?.type.startsWith('image/') ? (
                 <img
                   src={preview}
                   alt="Preview"
-                  className="w-16 h-16 rounded-lg object-cover"
+                  className="h-14 w-14 rounded-lg object-cover md:h-16 md:w-16"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-lg bg-slate-700
+                <div className="h-14 w-14 rounded-lg bg-slate-700 md:h-16 md:w-16
                                 flex items-center justify-center">
                   <span className="text-2xl">📎</span>
                 </div>
@@ -174,13 +174,13 @@ const MessageInput = ({ activeChat }: Props) => {
       )}
 
       {/* Input row */}
-      <div className="flex items-end gap-2">
+      <div className="flex min-w-0 items-end gap-1.5 md:gap-2">
 
         {/* Attachment button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-slate-400 hover:text-blue-400
-                     transition-colors duration-150 flex-shrink-0"
+          className="flex-shrink-0 p-2 text-slate-400 hover:text-blue-400
+                     transition-colors duration-150"
           title="Attach file"
         >
           <Paperclip size={20} />
@@ -204,8 +204,8 @@ const MessageInput = ({ activeChat }: Props) => {
           placeholder="Type a message... (Enter to send)"
           rows={1}
           className="
-            flex-1 bg-slate-800 text-white text-sm
-            rounded-xl px-4 py-2.5
+            min-w-0 flex-1 bg-slate-800 text-white text-[13px] md:text-sm
+            rounded-xl px-3 py-2.5 md:px-4
             border border-slate-700 focus:border-blue-500
             outline-none resize-none
             placeholder:text-slate-500
