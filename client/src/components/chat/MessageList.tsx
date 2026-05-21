@@ -135,13 +135,13 @@ const MessageList = ({ activeChat }: Props) => {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex min-h-0 flex-col flex-1 overflow-hidden">
 
       {/* Messages scrollable area */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        className="flex-1 overflow-y-auto px-3 py-3 space-y-3 md:px-4 md:py-4 md:space-y-4"
       >
         {/* Load more indicator */}
         {isLoadingMore && (

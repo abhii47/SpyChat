@@ -42,6 +42,7 @@ const MessageBubble = ({ message }: Props) => {
 
             {/* Bubble */}
             <div className={`
+                max-w-[68vw] sm:max-w-[70%]
                 px-4 py-2.5 rounded-2xl
                 ${isOwn
                     ? 'bg-blue-600 text-white rounded-br-sm'
@@ -51,7 +52,7 @@ const MessageBubble = ({ message }: Props) => {
 
                 {/* Text message */}
                 {message.type === 'text' && (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words md:text-sm">
                         {message.content}
                     </p>
                 )}
@@ -61,7 +62,7 @@ const MessageBubble = ({ message }: Props) => {
                     <div className="space-y-2">
                         {/* Text bhi hai toh dikhao */}
                         {message.content && (
-                            <p className="text-sm leading-relaxed">
+                            <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words md:text-sm">
                                 {message.content}
                             </p>
                         )}
@@ -92,7 +93,7 @@ const MessageBubble = ({ message }: Props) => {
                                                     hover:bg-white/20 transition-colors"
                                     >
                                         <span className="text-lg">📎</span>
-                                        <span className="text-sm truncate max-w-[180px]">
+                                        <span className="max-w-[38vw] truncate text-[13px] sm:max-w-[180px] md:text-sm">
                                             {item.url.split('/').pop()}
                                         </span>
                                     </a>

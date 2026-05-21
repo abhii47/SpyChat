@@ -2,25 +2,48 @@ import ChatWindow from "../components/chat/ChatWindow"
 import Sidebar from "../components/sidebar/Sidebar"
 import ConnectionBanner from "../components/ui/ConnectionBanner"
 import { useUiStore } from "../store/uiStore"
+import { ArrowLeft } from 'lucide-react'
 
 const ChatPage = () => {
-  const { activeChat } = useUiStore()
+  const { activeChat, setActiveChat } = useUiStore()
 
   return (
     <>
-    {/* ✅ Connection status — top pe float karta hai */}
+    {/* Connection status — top pe float karta hai */}
     <ConnectionBanner />
     <div
-      className="flex h-screen overflow-hidden bg-slate-950"
+      className="flex h-[100svh] overflow-hidden bg-slate-950"
     >
-      {/* Sidebar — fixed width */}
-      <div className="w-80 flex-shrink-0 border-r border-slate-700/50">
+      {/* Sidebar */}
+      <div className={`
+        w-full md:w-80 md:flex-shrink-0 border-r border-slate-700/50
+        ${activeChat ? 'hidden md:block' : 'block'}
+      `}>
         <Sidebar />
       </div>  
       {/* Chat Window */}
-      <div className="flex-1 overflow-hidden">
+      <div className={`min-w-0 flex-1 overflow-hidden flex-col
+          ${activeChat ? 'flex' : 'hidden md:flex'}
+      `}>
         {activeChat ? (
-          <ChatWindow activeChat={activeChat} />
+          <div className="flex min-h-0 flex-col h-full">
+              {/**
+               * Mobile back button
+               * Desktop pe nahi dikhega (md:hidden)
+               */}
+              <div className="flex items-center gap-2 px-3 py-2
+                              border-b border-slate-700/50 md:hidden">
+                <button
+                  onClick={() => setActiveChat(null)}
+                  className="p-1.5 text-slate-400 hover:text-white
+                             rounded-lg hover:bg-slate-800"
+                  title="Back"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+              </div>
+              <ChatWindow activeChat={activeChat} />
+            </div>
         ) : (
               <EmptyState />
         )}

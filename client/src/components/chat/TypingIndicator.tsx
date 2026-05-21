@@ -52,7 +52,7 @@ const TypingIndicator = ({ activeChat, roomKey }:Props) => {
                     />
                 ))}
             </div>
-            <span className="text-xs text-slate-500">
+            <span className="text-[11px] text-slate-500 md:text-xs">
                 {names.join(', ')} {names.length === 1 ? 'is' : 'are'} typing...
             </span>
         </div>

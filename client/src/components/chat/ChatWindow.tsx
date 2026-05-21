@@ -9,7 +9,7 @@ interface Props {
 
 const ChatWindow = ({ activeChat }: Props) => {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex min-h-0 flex-col h-full">
       <ChatHeader activeChat={activeChat} />
       <MessageList activeChat={activeChat} />
       <MessageInput activeChat={activeChat} />
