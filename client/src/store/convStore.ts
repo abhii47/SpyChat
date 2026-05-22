@@ -8,6 +8,7 @@ interface ConvState {
     //Actions
     setConversations: (convs:Conversation[]) => void
     addConversation: (conv:Conversation) => void
+    removeConversation: (convId:number) => void
     updateLastMessage: (convId:number, message:Message) => void
     incrementUnread: (convId:number) => void
     resetUnread: (convId:number) => void
@@ -27,6 +28,13 @@ export const useConvStore = create<ConvState>((set) => ({
             if(exists) return state
             return { conversations: [conv, ...state.conversations] }
         }),
+
+    removeConversation: (convId) =>
+        set((state) => ({
+            conversations: state.conversations.filter(
+                (c) => c.conversation_id !== convId
+            ),
+        })),
 
     updateLastMessage: (convId, message) => 
         set((state) => ({

@@ -80,4 +80,22 @@ export const convHandler = (io:Server,socket:Socket) => {
             emitSocketError(socket, "get_conv_msg", err.message);
         }
     });
+
+    socket.on("clear_conv", async(conversationId:number) => {
+        try {
+            if(!conversationId || isNaN(conversationId)){
+                emitSocketError(socket, "clear_conv", "conversation_id is Invalid");
+                return;
+            }
+            await convService.clearConversation(userId, conversationId);
+            io.to(`room_conv_${conversationId}`).emit("conversation_cleared", {
+                conversation_id:conversationId,
+                cleared_by:userId
+            });
+            logger.info("User cleared conversation", { conversation_id:conversationId });
+        } catch (err:any) {
+            logger.error('clear_conv error', { stack: err.stack });
+            emitSocketError(socket, "clear_conv", err.message);
+        }
+    });
 }
