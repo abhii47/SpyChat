@@ -5,8 +5,10 @@ import { useConvStore } from "../../store/convStore";
 import { useGroupStore } from "../../store/groupStore";
 import type { ActiveChat } from "../../types";
 import Avatar from "../ui/Avatar";
-import { Info } from 'lucide-react'
+import { Info, Trash2 } from 'lucide-react'
 import GroupDetailsModal from "../group/GroupDetailModal";
+import toast from "react-hot-toast";
+import { getSocket } from "../../socket/socketInstance";
 
 interface Props{
     activeChat:ActiveChat
@@ -17,6 +19,7 @@ const ChatHeader = ({ activeChat }:Props) => {
     const { conversations } = useConvStore()
     const { groups } = useGroupStore()
     const [showDetails, setShowDetails] = useState(false)
+    const [isClearing, setIsClearing] = useState(false)
     const { isUserOnline } = useChatStore()
 
     // Conversation Header
@@ -31,6 +34,25 @@ const ChatHeader = ({ activeChat }:Props) => {
         if(!otherUser) return null
 
         const online = isUserOnline(otherUser.user_id)
+
+        const handleClearConversation = async() => {
+            const confirmed = window.confirm(`Clear conversation with ${otherUser.name}?`)
+            if(!confirmed || isClearing) return
+
+            const socket = getSocket()
+            if(!socket?.connected){
+                toast.error('Not connected. Please try again.')
+                return
+            }
+
+            setIsClearing(true)
+            socket.once('error', (err:any) => {
+                if(err?.event === 'clear_conv'){
+                    setIsClearing(false)
+                }
+            })
+            socket.emit('clear_conv', activeChat.id)
+        }
 
         return (
             <div className="flex min-w-0 items-center gap-3 px-3 py-2.5 md:px-4 md:py-3
@@ -50,6 +72,16 @@ const ChatHeader = ({ activeChat }:Props) => {
                         {online ? 'Online' : 'Offline'}
                     </p>
                 </div>
+                <button
+                    onClick={handleClearConversation}
+                    disabled={isClearing}
+                    className="p-2 text-slate-400 hover:text-red-300
+                            hover:bg-slate-800 rounded-lg transition-colors
+                            disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Clear conversation"
+                >
+                    <Trash2 size={18} />
+                </button>
             </div>
         )
     }

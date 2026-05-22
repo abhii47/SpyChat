@@ -29,7 +29,7 @@ export const login = async(
         const expiryDate = 7 * 24 * 60 * 60 * 1000;
         res.cookie("refreshToken",refreshToken,{
             httpOnly:true,
-            sameSite:'strict',
+            sameSite:'none',
             secure:getEnv("NODE_ENV") === 'production',
             maxAge:expiryDate
         });

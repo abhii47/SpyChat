@@ -2,6 +2,8 @@ import { Socket } from "socket.io-client";
 import { useConvStore } from "../store/convStore";
 import { useUiStore } from "../store/uiStore";
 import { useChatStore } from "../store/chatStore";
+import { useAuthStore } from "../store/authStore";
+import toast from "react-hot-toast";
 
 
 export const registerConvEvents = (socket:Socket) => {
@@ -29,4 +31,24 @@ export const registerConvEvents = (socket:Socket) => {
         const roomKey = `conv_${conversation_id}`;
         useChatStore.getState().setMessages(roomKey, messages)
     })
+
+    socket.on("conversation_cleared", ({ conversation_id, cleared_by }:any) => {
+        const roomKey = `conv_${conversation_id}`;
+        const activeChat = useUiStore.getState().activeChat;
+        const currentUser = useAuthStore.getState().user;
+
+        useConvStore.getState().removeConversation(conversation_id);
+        useChatStore.getState().clearMessages(roomKey);
+
+        if(activeChat?.type === 'conversation' && activeChat.id === conversation_id){
+            useUiStore.getState().setActiveChat(null);
+        }
+
+        if(currentUser?.user_id === cleared_by){
+            toast.success('Conversation cleared');
+        } else {
+            toast('Conversation was cleared');
+        }
+    })
+
 }

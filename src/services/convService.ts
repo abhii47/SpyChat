@@ -197,10 +197,71 @@ export const getConvMembers = async (user_id: number) => {
     return members;
 }
 
+export const clearConversation = async(user_id:number, conversationId:number) => {
+    const t = await sequelize.transaction();
+    try {
+        const requester = await ConversationMember.findOne({
+            where:{ user_id, conversation_id:conversationId },
+            transaction:t
+        });
+
+        if(!requester){
+            throw new AppError("Conversation not found", 404);
+        }
+
+        const members = await ConversationMember.findAll({
+            where:{ conversation_id:conversationId },
+            attributes:["user_id"],
+            transaction:t,
+        });
+
+        const messages = await Message.findAll({
+            where:{ conversation_id:conversationId },
+            attributes:["message_id"],
+            transaction:t
+        });
+        const messageIds = messages.map(m => m.message_id);
+
+        if(messageIds.length > 0){
+            await MessageRead.destroy({
+                where:{ message_id: { [Op.in]:messageIds }},
+                transaction:t
+            });
+
+            await Message.destroy({
+                where:{ message_id: { [Op.in]:messageIds }},
+                transaction:t
+            });
+        }
+
+        await ConversationMember.destroy({
+            where:{ conversation_id:conversationId },
+            transaction:t
+        });
+
+        await Conversation.destroy({
+            where:{ conversation_id:conversationId },
+            transaction:t
+        });
+
+        await t.commit();
+
+        return {
+            conversation_id: conversationId,
+            memberIds: members.map((m) => m.user_id),
+        };
+        
+    } catch (err:any) {
+        await t.rollback();
+        throw err;
+    }
+}
+
 export default {
     startConversation,
     getMyConversations,
     getConversationById,
     getConversationMessages,
-    getConvMembers
+    getConvMembers,
+    clearConversation,
 }

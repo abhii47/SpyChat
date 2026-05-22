@@ -76,6 +76,21 @@ export const deleteMessage = async(
     }
 }
 
+export const clearAllMessages = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const conversationId = Number(req.params.convId);
+        const result = await messageService.clearAllMessages(conversationId);
+        result ? successResponse("Messages cleared successfully", 200, res, null)
+               : successResponse("Conversation not found", 404, res, null);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export const checkMessageRead = async(
     req:Request,
     res:Response,
@@ -168,6 +183,7 @@ export default {
     sendMessage,
     getMessage,
     deleteMessage,
+    clearAllMessages,
     checkMessageRead,
     createMessageRead,
     markAllRead,

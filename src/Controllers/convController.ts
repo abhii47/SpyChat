@@ -69,8 +69,30 @@ export const getConversationMessages = async(
     }
 }
 
+export const clearConversation = async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    try {
+        const user_id:number = req.user?.id;
+        const conversationId = Number(req.params.convId);
+
+        if(isNaN(conversationId)){
+            throw new Error("Invalid conversation ID");
+        }
+
+        const result = await convService.clearConversation(user_id, conversationId);
+
+        successResponse("Conversation cleared successfully", 200, res, result);
+    } catch (err:any) {
+        next(err);
+    }
+}
+
 export default {
     startConversation,
     getMyConversations,
-    getConversationMessages
+    getConversationMessages,
+    clearConversation,
 }

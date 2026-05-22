@@ -4,6 +4,7 @@ import { ConversationMember, GroupMember, Message, MessageRead, User } from "../
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import { deleteFiles, uploadMultipleFiles } from "../utils/uploadToCloudinary";
+import sequelize from "../config/db";
 
 type msgBody = {
     sender_id:number;
@@ -134,6 +135,42 @@ export const deleteMessage = async(
         deleted:mediaUrls ? mediaUrls.deleted : null,
     }
 } 
+
+export const clearAllMessages = async(conversationId:number) => {
+    const t = await sequelize.transaction();
+    try {
+        const messages = await Message.findAll({
+            where:{ conversation_id:conversationId },
+            attributes:["message_id"],
+            transaction:t
+        });
+        
+        const messageIds = messages.map(m => m.message_id);
+
+        if(messageIds.length > 0){
+            await MessageRead.destroy({
+                where:{
+                    message_id: { [Op.in]: messageIds },
+                },
+                transaction:t
+            });
+            await Message.destroy({
+                where:{
+                    message_id: { [Op.in]: messageIds },
+                },
+                transaction:t
+            });
+            await t.commit();
+            return true;
+        }
+
+        await t.commit();
+        return false;
+    } catch (err) {
+        await t.rollback();
+        throw err;
+    }
+}
 
 export const checkMessageRead = async(
     message_id:number,
@@ -373,6 +410,7 @@ export default {
     sendMessage,
     getMessage,
     deleteMessage,
+    clearAllMessages,
     checkMessageRead,
     createMessageRead,
     markAllRead,
