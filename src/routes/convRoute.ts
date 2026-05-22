@@ -9,5 +9,6 @@ const router = Router();
 router.post("/", auth, validateBody(startConversationSchema), convController.startConversation);
 router.get("/", auth, convController.getMyConversations);
 router.get("/:id/messages", auth, convController.getConversationMessages);
+router.delete("/:convId", auth, convController.clearConversation);
 
 export default router;

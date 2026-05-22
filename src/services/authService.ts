@@ -52,7 +52,7 @@ export const login = async (body: logBody) => {
 
     if (!user) {
         logger.warn("Login failed: user not found", { email });
-        throw new AppError("Invalid email or password", 401);
+        throw new AppError("Invalid email or password", 400);
     }
 
     const matchPassword = await bcrypt.compare(
@@ -61,7 +61,7 @@ export const login = async (body: logBody) => {
 
     if (!matchPassword) {
         logger.warn("Password failed: password not matched");
-        throw new AppError("Invalid email or password", 401);
+        throw new AppError("Invalid email or password", 400);
     }
 
     const payload: Payload = {

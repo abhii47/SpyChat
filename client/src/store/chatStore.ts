@@ -7,6 +7,7 @@ interface ChatStore {
     typingUsers: Record<string, number[]>
 
     setMessages: (roomKey:string, message:Message[]) => void,
+    clearMessages: (roomKey:string) => void,
     addMessage: (roomKey:string, message:Message) => void,
     removeMessage: (roomKey:string, messageId:number) => void,
     addOnlineUser: (userId:number) => void,
@@ -24,6 +25,13 @@ export const useChatStore = create<ChatStore>((set,get) => ({
         set((state) => ({
             messages: {...state.messages, [roomKey]:messages}
         })),
+
+    clearMessages: (roomKey) =>
+        set((state) => {
+            const nextMessages = { ...state.messages }
+            delete nextMessages[roomKey]
+            return { messages: nextMessages }
+        }),
 
     addMessage: (roomKey, message) =>
         set((state) => {

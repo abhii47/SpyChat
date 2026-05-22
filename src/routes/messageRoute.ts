@@ -10,6 +10,7 @@ const router = Router();
 router.post("/upload",auth,uploadMultiple("media"),messageController.uploadMediaFiles);
 router.post("/send",auth,uploadMultiple("media"),validateBody(SendMessageSchema),messageController.sendMessage);
 router.delete("/:messageId", auth, messageController.deleteMessage);
+router.delete("/clear-all/:convId", auth, messageController.clearAllMessages);
 router.post("/:messageId/read",auth,messageController.createMessageRead);
 router.get("/:messageId",auth,messageController.checkMessageRead);
 router.post("/mark-all-read",auth,messageController.markAllRead);
