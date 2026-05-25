@@ -229,4 +229,22 @@ export const chatHandler = (io:Server, socket:Socket) => {
             emitSocketError(socket, "delete_message", err.message);
         }
     });
+
+    socket.on("clear_all_message", async(conversationId:number) => {
+        try { 
+            if(!conversationId || isNaN(conversationId)){
+                emitSocketError(socket, "clear_all_message", "Invalid conversation_id");
+                return;
+            }
+            await messageService.clearAllMessages(conversationId);
+            io.to(`room_conv_${conversationId}`).emit("message_cleared", {
+                conversation_id:conversationId,
+                cleared_by:user.id
+            });
+            logger.info("All_message_cleared", { conversation_id:conversationId });
+        } catch (err:any) {
+            logger.error("all_message error", {stack:err.stack});
+            emitSocketError(socket, "clear_all_message", err.message);
+        }
+    });
 }
