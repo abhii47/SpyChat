@@ -10,6 +10,7 @@ interface ConvState {
     addConversation: (conv:Conversation) => void
     removeConversation: (convId:number) => void
     updateLastMessage: (convId:number, message:Message) => void
+    clearLastMessage: (convId:number) => void
     incrementUnread: (convId:number) => void
     resetUnread: (convId:number) => void
 }
@@ -41,6 +42,15 @@ export const useConvStore = create<ConvState>((set) => ({
             conversations: state.conversations.map((c) =>
                 c.conversation_id === convId
                     ? { ...c, lastMessage:message, updated_at: message.created_at }
+                    : c
+            ),
+        })),
+
+    clearLastMessage: (convId) =>
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.conversation_id === convId
+                    ? { ...c, lastMessage:null, unread_count:0 }
                     : c
             ),
         })),

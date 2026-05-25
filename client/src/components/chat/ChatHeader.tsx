@@ -5,7 +5,7 @@ import { useConvStore } from "../../store/convStore";
 import { useGroupStore } from "../../store/groupStore";
 import type { ActiveChat } from "../../types";
 import Avatar from "../ui/Avatar";
-import { Info, Trash2 } from 'lucide-react'
+import { Info, MessageSquareX, Trash2 } from 'lucide-react'
 import GroupDetailsModal from "../group/GroupDetailModal";
 import toast from "react-hot-toast";
 import { getSocket } from "../../socket/socketInstance";
@@ -19,7 +19,7 @@ const ChatHeader = ({ activeChat }:Props) => {
     const { conversations } = useConvStore()
     const { groups } = useGroupStore()
     const [showDetails, setShowDetails] = useState(false)
-    const [isClearing, setIsClearing] = useState(false)
+    const [pendingAction, setPendingAction] = useState<'messages' | 'conversation' | null>(null)
     const { isUserOnline } = useChatStore()
 
     // Conversation Header
@@ -35,23 +35,48 @@ const ChatHeader = ({ activeChat }:Props) => {
 
         const online = isUserOnline(otherUser.user_id)
 
-        const handleClearConversation = async() => {
-            const confirmed = window.confirm(`Clear conversation with ${otherUser.name}?`)
-            if(!confirmed || isClearing) return
-
+        const emitConversationAction = (
+            event:string,
+            successEvent:string,
+            action:'messages' | 'conversation'
+        ) => {
             const socket = getSocket()
             if(!socket?.connected){
                 toast.error('Not connected. Please try again.')
                 return
             }
 
-            setIsClearing(true)
-            socket.once('error', (err:any) => {
-                if(err?.event === 'clear_conv'){
-                    setIsClearing(false)
+            const onSuccess = ({ conversation_id }:any) => {
+                if(conversation_id === activeChat.id){
+                    setPendingAction(null)
+                    socket.off('error', onError)
                 }
-            })
-            socket.emit('clear_conv', activeChat.id)
+            }
+            const onError = (err:any) => {
+                if(err?.event === event){
+                    setPendingAction(null)
+                    socket.off(successEvent, onSuccess)
+                }
+            }
+
+            setPendingAction(action)
+            socket.once(successEvent, onSuccess)
+            socket.once('error', onError)
+            socket.emit(event, activeChat.id)
+        }
+
+        const handleClearMessages = () => {
+            if(pendingAction) return
+            if(window.confirm(`Clear all messages with ${otherUser.name}?`)){
+                emitConversationAction('clear_all_message', 'message_cleared', 'messages')
+            }
+        }
+
+        const handleClearConversation = () => {
+            if(pendingAction) return
+            if(window.confirm(`Delete conversation with ${otherUser.name}?`)){
+                emitConversationAction('clear_conv', 'conversation_cleared', 'conversation')
+            }
         }
 
         return (
@@ -73,12 +98,22 @@ const ChatHeader = ({ activeChat }:Props) => {
                     </p>
                 </div>
                 <button
-                    onClick={handleClearConversation}
-                    disabled={isClearing}
+                    onClick={handleClearMessages}
+                    disabled={pendingAction !== null}
                     className="p-2 text-slate-400 hover:text-red-300
                             hover:bg-slate-800 rounded-lg transition-colors
                             disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Clear conversation"
+                    title="Clear messages"
+                >
+                    <MessageSquareX size={18} />
+                </button>
+                <button
+                    onClick={handleClearConversation}
+                    disabled={pendingAction !== null}
+                    className="p-2 text-slate-400 hover:text-red-300
+                            hover:bg-slate-800 rounded-lg transition-colors
+                            disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete conversation"
                 >
                     <Trash2 size={18} />
                 </button>

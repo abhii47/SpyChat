@@ -4,6 +4,8 @@ import { useChatStore } from "../store/chatStore";
 import { useUiStore } from "../store/uiStore";
 import { useConvStore } from "../store/convStore";
 import { useGroupStore } from "../store/groupStore";
+import { useAuthStore } from "../store/authStore";
+import toast from "react-hot-toast";
 
 export const registerChatEvents = (socket:Socket) => {
     socket.on('new_message', (payload) => {
@@ -81,6 +83,20 @@ export const registerChatEvents = (socket:Socket) => {
                 .replace('room_group_', 'group_')
 
             useChatStore.getState().removeMessage(roomKey, data.message_id)
+        }
+    })
+
+    socket.on('message_cleared', ({ conversation_id, cleared_by }:any) => {
+        const roomKey = `conv_${conversation_id}`
+        const currentUser = useAuthStore.getState().user
+
+        useChatStore.getState().clearMessages(roomKey)
+        useConvStore.getState().clearLastMessage(conversation_id)
+
+        if(currentUser?.user_id === cleared_by){
+            toast.success('Messages cleared')
+        } else {
+            toast('Messages were cleared')
         }
     })
 }
