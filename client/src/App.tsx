@@ -10,8 +10,8 @@ function App() {
   
   useEffect(() => {
       const init = async () => {
-        const isLoggedIn = localStorage.getItem("spychat_logged_in") === "true"
-        if (!isLoggedIn) {
+        const hasSession = document.cookie.includes("spychat_session=1")
+        if (!hasSession) {
           useAuthStore.getState().clearAuth()
           return
         }

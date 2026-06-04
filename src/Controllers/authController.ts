@@ -33,6 +33,12 @@ export const login = async(
             secure:getEnv("NODE_ENV") === 'production',
             maxAge:expiryDate
         });
+        res.cookie("spychat_session","1",{
+            httpOnly:false,
+            sameSite:'none',
+            secure:getEnv("NODE_ENV") === 'production',
+            maxAge:expiryDate
+        });
 
         successResponse("User Login Successfully",200,res,{ user, accessToken, expires_in:"90 minutes" });
 
@@ -65,6 +71,7 @@ export const logout = async(
         const refreshToken = req.cookies?.refreshToken;
         await authService.logout(refreshToken);
         res.clearCookie("refreshToken");
+        res.clearCookie("spychat_session");
         successResponse("User Logout Successfully",200,res);
     } catch (err:any) {
         next(err);
