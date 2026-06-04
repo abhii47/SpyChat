@@ -19,19 +19,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     isAuthenticated: false,
     isLoading: true,
 
-    setAuth: (user, token) => set({
-        user,
-        accessToken: token,
-        isAuthenticated: true,
-        isLoading:false,
-    }),
+    setAuth: (user, token) => {
+        localStorage.setItem("spychat_logged_in", "true");
+        set({
+            user,
+            accessToken: token,
+            isAuthenticated: true,
+            isLoading:false,
+        });
+    },
     setToken: (token) => set({ accessToken: token }),
-    clearAuth: () => set({
-        user:null,
-        accessToken:null,
-        isAuthenticated:false,
-        isLoading:false,
-    }),
+    clearAuth: () => {
+        localStorage.removeItem("spychat_logged_in");
+        set({
+            user:null,
+            accessToken:null,
+            isAuthenticated:false,
+            isLoading:false,
+        });
+    },
 
     setLoading: (loading) => set({isLoading:loading}),
 }))
