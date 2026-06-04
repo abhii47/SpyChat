@@ -10,6 +10,12 @@ function App() {
   
   useEffect(() => {
       const init = async () => {
+        const isLoggedIn = localStorage.getItem("spychat_logged_in") === "true"
+        if (!isLoggedIn) {
+          useAuthStore.getState().clearAuth()
+          return
+        }
+
         try {
           const token = await refresh()
           useAuthStore.getState().setToken(token)
